@@ -1,7 +1,7 @@
 // @flow
 
 const interpolate = require('../style-spec/util/interpolate');
-const {interpolationFactor} = require('../style-spec/function');
+const interpolationFactor = require('../style-spec/function/interpolation_factor');
 const util = require('../util/util');
 const assert = require('assert');
 

@@ -1,14 +1,14 @@
 // @flow
 
-const { ParsingError, parseExpression } = require('../expression');
-const { BooleanType, typename } = require('../types');
+const { parseExpression } = require('../expression');
+const { BooleanType } = require('../types');
 
-import type { Expression, Scope } from '../expression';
+import type { Expression } from '../expression';
 import type { Type } from '../types';
 
 type Branches = Array<[Expression, Expression]>;
 
-class CaseExpression implements Expression {
+class Case implements Expression {
     key: string;
     type: Type;
 
@@ -17,57 +17,37 @@ class CaseExpression implements Expression {
 
     constructor(key: string, branches: Branches, otherwise: Expression) {
         this.key = key;
-        this.type = typename('T');
+        this.type = branches[0][1].type;
         this.branches = branches;
         this.otherwise = otherwise;
     }
 
     static parse(args, context) {
+        args = args.slice(1);
         if (args.length < 3)
-            throw new ParsingError(context.key, `Expected at least 3 arguments, but found only ${args.length}.`);
+            return context.error(`Expected at least 3 arguments, but found only ${args.length}.`);
         if (args.length % 2 === 0)
-            throw new ParsingError(context.key, `Expected an odd number of arguments.`);
+            return context.error(`Expected an odd number of arguments.`);
+
+        let outputType: Type = (null: any);
 
         const branches = [];
         for (let i = 0; i < args.length - 1; i += 2) {
-            branches.push([
-                parseExpression(args[i], context.concat(i, 'case')),
-                parseExpression(args[i + 1], context.concat(i + 1, 'case'))]);
+            const test = parseExpression(args[i], context.concat(i, 'case'), BooleanType);
+            if (!test) return null;
+
+            const result = parseExpression(args[i + 1], context.concat(i + 1, 'case'), outputType);
+            if (!result) return null;
+
+            branches.push([test, result]);
+
+            outputType = result.type;
         }
 
-        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'match'));
+        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'case'), outputType);
+        if (!otherwise) return null;
 
-        return new CaseExpression(context.key, branches, otherwise);
-    }
-
-    typecheck(expected: Type, scope: Scope) {
-        let result;
-
-        for (const [test, expression] of this.branches) {
-            result = test.typecheck(BooleanType, scope);
-            if (result.result === 'error') {
-                return result;
-            }
-
-            result = expression.typecheck(expected || typename('T'), scope);
-            if (result.result === 'error') {
-                return result;
-            }
-
-            expected = result.expression.type;
-        }
-
-        result = this.otherwise.typecheck(expected, scope);
-        if (result.result === 'error') {
-            return result;
-        }
-
-        this.type = result.expression.type;
-
-        return {
-            result: 'success',
-            expression: this
-        };
+        return new Case(context.key, branches, otherwise);
     }
 
     compile() {
@@ -89,14 +69,14 @@ class CaseExpression implements Expression {
         return result;
     }
 
-    visit(fn: (Expression) => void) {
-        fn(this);
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
         for (const [test, expression] of this.branches) {
-            test.visit(fn);
-            expression.visit(fn);
+            test.accept(visitor);
+            expression.accept(visitor);
         }
-        this.otherwise.visit(fn);
+        this.otherwise.accept(visitor);
     }
 }
 
-module.exports = CaseExpression;
+module.exports = Case;

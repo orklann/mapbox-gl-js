@@ -1,130 +1,32 @@
 // @flow
 
-const { parseExpression, Reference } = require('./expression');
-const { array, isGeneric, match } = require('./types');
+const { parseExpression, ParsingContext, match } = require('./expression');
 const assert = require('assert');
-const extend = require('../util/extend');
 
-import type { Expression, ParsingContext, Scope }  from './expression';
-import type { ExpressionName } from './expression_name';
+import type { Expression }  from './expression';
 import type { Type } from './types';
 
-export type NArgs = { kind: 'nargs', types: Array<Type>, N: number };
-export type Signature = Array<Type | NArgs>;
+type Varargs = {| type: Type |};
+type Signature = Array<Type> | Varargs;
+type Compile = (args: Array<string>) => string;
+type Definition = [Type, Signature, Compile] |
+    {|type: Type, overloads: Array<[Signature, Compile]>|};
 
 class CompoundExpression implements Expression {
     key: string;
+    name: string;
     type: Type;
+    compileFromArgs: Compile;
     args: Array<Expression>;
 
-    constructor(key: *, type: Type, args: Array<Expression>) {
+    static definitions: { [string]: Definition };
+
+    constructor(key: string, name: string, type: Type, compileFromArgs: Compile, args: Array<Expression>) {
         this.key = key;
+        this.name = name;
         this.type = type;
+        this.compileFromArgs = compileFromArgs;
         this.args = args;
-    }
-
-    applyType(type: Type, args: Array<Expression>): Expression {
-        return new this.constructor(this.key, type, args);
-    }
-
-    typecheck(expected: Type, scope: Scope) {
-        // Check if the expected type matches the expression's output type;
-        // If expression's output type is generic, pick up a typename binding
-        // to a concrete expected type if possible
-        const initialTypenames: { [string]: Type } = {};
-        const error = match(expected, this.type, initialTypenames, 'actual');
-        if (error) return { result: 'error', errors: [{ key: this.key, error }] };
-        expected = this.type;
-
-        let errors = [];
-        for (const params of this.constructor.signatures()) {
-            errors = [];
-            const typenames: { [string]: Type } = extend({}, initialTypenames);
-            // "Unroll" NArgs if present in the parameter list:
-            // argCount = nargType.type.length * n + nonNargParameterCount
-            // where n is the number of times the NArgs sequence must be
-            // repeated.
-            const argValues = this.args;
-            const expandedParams = [];
-            for (const param of params) {
-                if (param.kind === 'nargs') {
-                    let count = (argValues.length - (params.length - 1)) / param.types.length;
-                    count = Math.min(param.N, Math.ceil(count));
-                    while (count-- > 0) {
-                        for (const type of param.types) {
-                            expandedParams.push(type);
-                        }
-                    }
-                } else {
-                    expandedParams.push(param);
-                }
-            }
-
-            if (expandedParams.length !== argValues.length) {
-                errors.push({
-                    key: this.key,
-                    error: `Expected ${expandedParams.length} arguments, but found ${argValues.length} instead.`
-                });
-                continue;
-            }
-
-            // Iterate through arguments to:
-            //  - match parameter type vs argument type, checking argument's result type only (don't recursively typecheck subexpressions at this stage)
-            //  - collect typename mappings when ^ succeeds or type errors when it fails
-            for (let i = 0; i < argValues.length; i++) {
-                const param = expandedParams[i];
-                let arg = argValues[i];
-                if (arg instanceof Reference) {
-                    arg = scope.get(arg.name);
-                }
-                const error = match(
-                    resolveTypenamesIfPossible(param, typenames),
-                    arg.type,
-                    typenames
-                );
-                if (error) errors.push({ key: arg.key, error });
-            }
-
-            const resultType = resolveTypenamesIfPossible(expected, typenames);
-
-            if (isGeneric(resultType)) {
-                errors.push({
-                    key: this.key,
-                    error: `Could not resolve ${this.type.name}.  This expression must be wrapped in a type conversion, e.g. ["string", ${stringifyExpression(this)}].`
-                });
-            }
-
-            // If we already have errors, return early so we don't get duplicates when
-            // we typecheck against the resolved argument types
-            if (errors.length) continue;
-
-            // resolve typenames and recursively type check argument subexpressions
-            const resolvedParams = [];
-            const checkedArgs = [];
-            for (let i = 0; i < expandedParams.length; i++) {
-                const t = expandedParams[i];
-                const arg = argValues[i];
-                const expected = resolveTypenamesIfPossible(t, typenames);
-                const checked = arg.typecheck(expected, scope);
-                if (checked.result === 'error') {
-                    errors.push.apply(errors, checked.errors);
-                } else if (errors.length === 0) {
-                    resolvedParams.push(expected);
-                    checkedArgs.push(checked.expression);
-                }
-            }
-
-            if (errors.length === 0) return {
-                result: 'success',
-                expression: this.applyType(resultType, checkedArgs)
-            };
-        }
-
-        assert(errors.length > 0);
-        return {
-            result: 'error',
-            errors
-        };
     }
 
     compile(): string {
@@ -140,61 +42,104 @@ class CompoundExpression implements Expression {
         return this.compileFromArgs(compiledArgs);
     }
 
-    compileFromArgs(_: Array<string>): string {
-        throw new Error('Unimplemented');
-    }
-
     serialize() {
-        const name = this.constructor.opName();
+        const name = this.name;
         const args = this.args.map(e => e.serialize());
         return [ name ].concat(args);
     }
 
-    visit(fn: (Expression) => void) {
-        fn(this);
-        this.args.forEach(a => a.visit(fn));
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
+        this.args.forEach(a => a.accept(visitor));
     }
 
-    // implemented by subclasses
-    static opName(): ExpressionName { throw new Error('Unimplemented'); }
-    static type(): Type { throw new Error('Unimplemented'); }
-    static signatures(): Array<Signature> { throw new Error('Unimplemented'); }
-
-    // default parse; overridden by some subclasses
-    static parse(args: Array<mixed>, context: ParsingContext) {
-        const op = this.opName();
-        const parsedArgs: Array<Expression> = [];
-        for (const arg of args) {
-            parsedArgs.push(parseExpression(arg, context.concat(1 + parsedArgs.length, op)));
+    static parse(args: Array<mixed>, context: ParsingContext): ?Expression {
+        const op: string = (args[0]: any);
+        const definition = CompoundExpression.definitions[op];
+        if (!definition) {
+            return context.error(`Unknown expression "${op}". If you wanted a literal array, use ["literal", [...]].`, 0);
         }
 
-        return new this(context.key, this.type(), parsedArgs);
+        // First parse all the args
+        const parsedArgs: Array<Expression> = [];
+        for (const arg of args.slice(1)) {
+            const parsed = parseExpression(arg, context.concat(1 + parsedArgs.length, op));
+            if (!parsed) return null;
+            parsedArgs.push(parsed);
+        }
+
+        // Now check argument types against each signature
+        const type = Array.isArray(definition) ?
+            definition[0] : definition.type;
+        const overloads = Array.isArray(definition) ?
+            [[definition[1], definition[2]]] :
+            definition.overloads;
+
+        let signatureContext: ParsingContext = (null: any);
+
+        for (const [params, compileFromArgs] of overloads) {
+            signatureContext = new ParsingContext(context.definitions, context.path, context.ancestors, context.scope);
+            if (Array.isArray(params)) {
+                if (params.length !== parsedArgs.length) {
+                    signatureContext.error(`Expected ${params.length} arguments, but found ${parsedArgs.length} instead.`);
+                    continue;
+                }
+            }
+
+            for (let i = 0; i < parsedArgs.length; i++) {
+                const expected = Array.isArray(params) ? params[i] : params.type;
+                const arg = parsedArgs[i];
+                match(expected, arg.type, signatureContext.concat(i + 1, op));
+            }
+
+            if (signatureContext.errors.length === 0) {
+                return new CompoundExpression(context.key, op, type, compileFromArgs, parsedArgs);
+            }
+        }
+
+        assert(signatureContext.errors.length > 0);
+
+        if (overloads.length === 1) {
+            context.errors.push.apply(context.errors, signatureContext.errors);
+        } else {
+            const signatures = overloads
+                .map(([params]) => stringifySignature(params))
+                .join(' | ');
+            const actualTypes = parsedArgs
+                .map(arg => arg.type.name)
+                .join(', ');
+            context.error(`Expected arguments of type ${signatures}, but found (${actualTypes}) instead.`);
+        }
+
+        return null;
+    }
+
+    static register(
+        expressions: { [string]: Class<Expression> },
+        definitions: { [string]: Definition }
+    ) {
+        assert(!CompoundExpression.definitions);
+        CompoundExpression.definitions = definitions;
+        for (const name in definitions) {
+            expressions[name] = CompoundExpression;
+        }
     }
 }
 
-function stringifyExpression(e: Expression) :string {
-    return JSON.stringify(e.serialize());
+function varargs(type: Type): Varargs {
+    return { type };
 }
 
-function resolveTypenamesIfPossible(type: Type, typenames: {[string]: Type}, stack = []) : Type {
-    assert(stack.indexOf(type) < 0, 'resolveTypenamesIfPossible() implementation does not support recursive variants.');
-    if (!isGeneric(type)) return type;
-    const resolve = (t) => resolveTypenamesIfPossible(t, typenames, stack.concat(type));
-    if (type.kind === 'typename') return typenames[type.typename] || type;
-    if (type.kind === 'array') return array(resolve(type.itemType), type.N);
-    assert(false, `Unsupported type ${type.kind}`);
-    return type;
-}
-
-function nargs(N: number, ...types: Array<Type>) : NArgs {
-    return {
-        kind: 'nargs',
-        types,
-        N
-    };
+function stringifySignature(signature: Signature): string {
+    if (Array.isArray(signature)) {
+        return `(${signature.map(param => param.name).join(', ')})`;
+    } else {
+        return `(${signature.type.name}...)`;
+    }
 }
 
 module.exports = {
     CompoundExpression,
-    nargs
+    varargs
 };
+

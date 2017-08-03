@@ -1,44 +1,33 @@
 // @flow
 
 const { parseExpression } = require('../expression');
-const { typename } = require('../types');
 
-import type { Expression, Scope } from '../expression';
+import type { Expression } from '../expression';
 import type { Type } from '../types';
 
-class CoalesceExpression implements Expression {
+class Coalesce implements Expression {
     key: string;
     type: Type;
     args: Array<Expression>;
 
     constructor(key: string, args: Array<Expression>) {
         this.key = key;
-        this.type = typename('T');
+        this.type = args[0].type;
         this.args = args;
     }
 
     static parse(args, context) {
+        args = args.slice(1);
+        let outputType;
         const parsedArgs = [];
         for (const arg of args) {
-            parsedArgs.push(parseExpression(arg, context.concat(1 + parsedArgs.length, 'coalesce')));
+            const argContext = context.concat(1 + parsedArgs.length, 'coalesce');
+            const parsed = parseExpression(arg, argContext, outputType);
+            if (!parsed) return null;
+            outputType = parsed.type;
+            parsedArgs.push(parsed);
         }
-        return new CoalesceExpression(context.key, parsedArgs);
-    }
-
-    typecheck(expected: Type, scope: Scope) {
-        for (const arg of this.args) {
-            const result = arg.typecheck(expected || typename('T'), scope);
-            if (result.result === 'error') {
-                return result;
-            }
-            expected = result.expression.type;
-        }
-
-        this.type = expected;
-        return {
-            result: 'success',
-            expression: this
-        };
+        return new Coalesce(context.key, parsedArgs);
     }
 
     compile() {
@@ -49,12 +38,12 @@ class CoalesceExpression implements Expression {
         return ['coalesce'].concat(this.args.map(a => a.serialize()));
     }
 
-    visit(fn: (Expression) => void) {
-        fn(this);
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
         for (const arg of this.args) {
-            arg.visit(fn);
+            arg.accept(visitor);
         }
     }
 }
 
-module.exports = CoalesceExpression;
+module.exports = Coalesce;

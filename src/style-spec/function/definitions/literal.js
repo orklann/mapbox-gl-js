@@ -1,14 +1,12 @@
 // @flow
 
-const { ParsingError } = require('../expression');
 const { Color, isValue, typeOf } = require('../values');
-const { match } = require('../types');
 
 import type { Type } from '../types';
 import type { Value }  from '../values';
 import type { Expression, ParsingContext }  from '../expression';
 
-class LiteralExpression implements Expression {
+class Literal implements Expression {
     key: string;
     type: Type;
     value: Value;
@@ -20,22 +18,20 @@ class LiteralExpression implements Expression {
     }
 
     static parse(args: Array<mixed>, context: ParsingContext) {
-        if (args.length !== 1)
-            throw new ParsingError(context.key, `'literal' expression requires exactly one argument, but found ${args.length} instead.`);
+        if (args.length !== 2)
+            return context.error(`'literal' expression requires exactly one argument, but found ${args.length - 1} instead.`);
 
-        if (!isValue(args[0]))
-            throw new ParsingError(context.key, `invalid value`);
+        if (!isValue(args[1]))
+            context.error(`invalid value`);
 
-        const value = (args[0] : any);
+        const value = (args[1] : any);
         const type = typeOf(value);
 
         return new this(context.key, type, value);
     }
 
-    typecheck(expected: Type) {
-        const error = match(expected, this.type);
-        if (error) return { result: 'error', errors: [{ key: this.key, error }] };
-        return {result: 'success', expression: this};
+    typecheck() {
+        return this;
     }
 
     compile() {
@@ -53,7 +49,7 @@ class LiteralExpression implements Expression {
         }
     }
 
-    visit(fn: (Expression) => void) { fn(this); }
+    accept(visitor: Visitor<Expression>) { visitor.visit(this); }
 }
 
-module.exports = LiteralExpression;
+module.exports = Literal;

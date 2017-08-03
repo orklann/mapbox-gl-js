@@ -2,13 +2,11 @@
 
 const {
     NumberType,
-    ColorType,
-    typename
+    ColorType
 } = require('../types');
+const { parseExpression } = require('../expression');
 
-const { ParsingError, parseExpression } = require('../expression');
-
-import type { Expression, Scope } from '../expression';
+import type { Expression } from '../expression';
 import type { Type } from '../types';
 
 export type InterpolationType =
@@ -18,7 +16,7 @@ export type InterpolationType =
 
 type Stops = Array<[number, Expression]>;
 
-class CurveExpression implements Expression {
+class Curve implements Expression {
     key: string;
     type: Type;
 
@@ -28,20 +26,21 @@ class CurveExpression implements Expression {
 
     constructor(key: string, interpolation: InterpolationType, input: Expression, stops: Stops) {
         this.key = key;
-        this.type = typename('T');
+        this.type = stops[0][1].type;
         this.interpolation = interpolation;
         this.input = input;
         this.stops = stops;
     }
 
     static parse(args, context) {
+        args = args.slice(1);
         if (args.length < 4)
-            throw new ParsingError(context.key, `Expected at least 2 arguments, but found only ${args.length}.`);
+            return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
 
         let [interpolation, input, ...rest] = args;
 
         if (!Array.isArray(interpolation) || interpolation.length === 0) {
-            throw new ParsingError(`${context.key}[1]`, `Expected an interpolation type expression, but found ${String(interpolation)} instead.`);
+            return context.error(`Expected an interpolation type expression, but found ${String(interpolation)} instead.`, 1);
         }
 
         if (interpolation[0] === 'step') {
@@ -51,72 +50,47 @@ class CurveExpression implements Expression {
         } else if (interpolation[0] === 'exponential') {
             const base = interpolation[1];
             if (typeof base !== 'number')
-                throw new ParsingError(`${context.key}[1][1]`, `Exponential interpolation requires a numeric base.`);
+                return context.error(`Exponential interpolation requires a numeric base.`, 1, 1);
             interpolation = {
                 name: 'exponential',
                 base
             };
         } else {
-            throw new ParsingError(`${context.key}[1][0]`, `Unknown interpolation type ${String(interpolation[0])}`);
+            return context.error(`Unknown interpolation type ${String(interpolation[0])}`, 1, 0);
         }
 
-        input = parseExpression(input, context.concat(2, 'curve'));
+        input = parseExpression(input, context.concat(2, 'curve'), NumberType);
+        if (!input) return null;
 
         const stops: Stops = [];
 
+        let outputType: Type = (null: any);
         for (let i = 0; i < rest.length; i += 2) {
             const label = rest[i];
             const value = rest[i + 1];
 
             if (typeof label !== 'number') {
-                throw new ParsingError(`${context.key}[${i + 3}]`, 'Input/output pairs for "curve" expressions must be defined using literal numeric values (not computed expressions) for the input values.');
+                return context.error('Input/output pairs for "curve" expressions must be defined using literal numeric values (not computed expressions) for the input values.', i + 3);
             }
 
             if (stops.length && stops[stops.length - 1][0] > label) {
-                throw new ParsingError(`${context.key}[${i + 3}]`, 'Input/output pairs for "curve" expressions must be arranged with input values in strictly ascending order.');
+                return context.error('Input/output pairs for "curve" expressions must be arranged with input values in strictly ascending order.', i + 3);
             }
 
-            stops.push([label, parseExpression(value, context.concat(i + 4, 'curve'))]);
+            const parsed = parseExpression(value, context.concat(i + 4, 'curve'), outputType);
+            if (!parsed) return null;
+            outputType = parsed.type;
+            stops.push([label, parsed]);
         }
 
-        return new CurveExpression(context.key, interpolation, input, stops);
-    }
-
-    typecheck(expected: Type, scope: Scope) {
-        const result = this.input.typecheck(typename('T'), scope);
-        if (result.result === 'error') {
-            return result;
+        if (interpolation.name !== 'step' &&
+            outputType !== NumberType &&
+            outputType !== ColorType &&
+            !(outputType.kind === 'array' && outputType.itemType === NumberType)) {
+            return context.error(`Type ${outputType.name} is not interpolatable, and thus cannot be used as a ${interpolation.name} curve's output type.`, 1);
         }
 
-        for (const [ , expression] of this.stops) {
-            const result = expression.typecheck(expected || typename('T'), scope);
-
-            if (result.result === 'error') {
-                return result;
-            }
-
-            expected = result.expression.type;
-        }
-
-        if (this.interpolation.name !== 'step' &&
-            expected !== NumberType &&
-            expected !== ColorType &&
-            !(expected.kind === 'array' && expected.itemType === NumberType)) {
-            return {
-                result: 'error',
-                errors: [{
-                    key: this.stops[0][1].key,
-                    error: `Type ${expected.name} is not interpolatable, and thus cannot be used as a ${this.interpolation.name} curve's output type.`
-                }]
-            };
-        }
-
-        this.type = expected;
-
-        return {
-            result: 'success',
-            expression: this
-        };
+        return new Curve(context.key, interpolation, input, stops);
     }
 
     compile() {
@@ -156,13 +130,13 @@ class CurveExpression implements Expression {
         return result;
     }
 
-    visit(fn: (Expression) => void) {
-        fn(this);
-        this.input.visit(fn);
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
+        this.input.accept(visitor);
         for (const [ , expression] of this.stops) {
-            expression.visit(fn);
+            expression.accept(visitor);
         }
     }
 }
 
-module.exports = CurveExpression;
+module.exports = Curve;

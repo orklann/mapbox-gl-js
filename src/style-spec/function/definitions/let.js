@@ -1,16 +1,10 @@
 // @flow
 
-const {
-    ParsingError,
-    parseExpression
-} = require('../expression');
-
-const { typename } = require('../types');
-
+const { parseExpression } = require('../expression');
 import type { Type } from '../types';
-import type { Expression, ParsingContext, Scope }  from '../expression';
+import type { Expression, ParsingContext }  from '../expression';
 
-class LetExpression implements Expression {
+class Let implements Expression {
     key: string;
     type: Type;
     bindings: Array<[string, Expression]>;
@@ -21,22 +15,6 @@ class LetExpression implements Expression {
         this.type = result.type;
         this.bindings = [].concat(bindings);
         this.result = result;
-    }
-
-    typecheck(expected: Type, scope: Scope) {
-        const bindings = [];
-        for (const [name, value] of this.bindings) {
-            const checkedValue = value.typecheck(typename('T'), scope);
-            if (checkedValue.result === 'error') return checkedValue;
-            bindings.push([name, checkedValue.expression]);
-        }
-        const nextScope = scope.concat(bindings);
-        const checkedResult = this.result.typecheck(expected, nextScope);
-        if (checkedResult.result === 'error') return checkedResult;
-        return {
-            result: 'success',
-            expression: new LetExpression(this.key, bindings, checkedResult.expression)
-        };
     }
 
     compile() {
@@ -55,7 +33,7 @@ class LetExpression implements Expression {
 
         const result = this.result.compile();
 
-        return `(function (${names.join(', ')}) {
+        return `(function (${names.map(Let.escape).join(', ')}) {
             return ${result};
         }.bind(this))(${values.join(', ')})`;
     }
@@ -69,36 +47,44 @@ class LetExpression implements Expression {
         return serialized;
     }
 
-    visit(fn: (Expression) => void): void {
-        fn(this);
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
         for (const binding of this.bindings) {
-            binding[1].visit(fn);
+            binding[1].accept(visitor);
         }
-        this.result.visit(fn);
+        this.result.accept(visitor);
     }
 
     static parse(args: Array<mixed>, context: ParsingContext) {
+        args = args.slice(1);
         if (args.length < 3)
-            throw new ParsingError(context.key, `Expected at least 3 arguments, but found ${args.length} instead.`);
+            return context.error(`Expected at least 3 arguments, but found ${args.length} instead.`);
 
         const bindings: Array<[string, Expression]> = [];
         for (let i = 0; i < args.length - 1; i += 2) {
             const name = args[i];
-            const key = context.path.concat(i + 1).join('.');
             if (typeof name !== 'string')
-                throw new ParsingError(key, `Expected string, but found ${typeof name} instead`);
+                return context.error(`Expected string, but found ${typeof name} instead`, i + 1);
 
             if (context.definitions[name])
-                throw new ParsingError(key, `"${name}" is reserved, so it cannot not be used as a "let" binding.`);
+                return context.error(`"${name}" is reserved, so it cannot not be used as a "let" binding.`, i + 1);
 
             const value = parseExpression(args[i + 1], context.concat(i + 2, 'let.binding'));
+            if (!value) return null;
 
             bindings.push([name, value]);
         }
+
         const resultContext = context.concat(args.length, 'let.result', bindings);
         const result = parseExpression(args[args.length - 1], resultContext);
-        return new this(context.key, bindings, result);
+        if (!result) return null;
+
+        return new Let(context.key, bindings, result);
+    }
+
+    static escape(name: string) :string {
+        return `_${name.replace(/[^a-zA-Z_a-zA-Z_0-9]/g, '_')}`;
     }
 }
 
-module.exports = LetExpression;
+module.exports = Let;

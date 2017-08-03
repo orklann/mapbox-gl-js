@@ -1,39 +1,41 @@
 // @flow
 
-const { ParsingError, parseExpression } = require('../expression');
-const { typename, match } = require('../types');
+const assert = require('assert');
+const { parseExpression, match } = require('../expression');
 const { typeOf } = require('../values');
 
-import type { Expression, Scope } from '../expression';
+import type { Expression } from '../expression';
 import type { Type } from '../types';
 
 type Branches = Array<[Array<null | number | string | boolean>, Expression]>;
 
-class MatchExpression implements Expression {
+class Match implements Expression {
     key: string;
     type: Type;
+    inputType: Type;
 
     input: Expression;
     branches: Branches;
     otherwise: Expression;
 
-    constructor(key: string, input: Expression, branches: Branches, otherwise: Expression) {
+    constructor(key: string, inputType: Type, input: Expression, branches: Branches, otherwise: Expression) {
         this.key = key;
-        this.type = typename('T');
+        this.type = branches[0][1].type;
+        this.inputType = inputType;
         this.input = input;
         this.branches = branches;
         this.otherwise = otherwise;
     }
 
     static parse(args, context) {
+        args = args.slice(1);
         if (args.length < 2)
-            throw new ParsingError(context.key, `Expected at least 2 arguments, but found only ${args.length}.`);
+            return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
         if (args.length % 2 !== 0)
-            throw new ParsingError(context.key, `Expected an even number of arguments.`);
-
-        const input = parseExpression(args[0], context.concat(1, 'match'));
+            return context.error(`Expected an even number of arguments.`);
 
         let inputType;
+        let outputType;
         const branches = [];
         for (let i = 1; i < args.length - 1; i += 2) {
             let labels = args[i];
@@ -43,58 +45,36 @@ class MatchExpression implements Expression {
                 labels = [labels];
             }
 
+            const labelContext = context.concat(i + 1, 'match');
             if (labels.length === 0) {
-                throw new ParsingError(`${context.key}[${i + 1}]`, 'Expected at least one branch label.');
+                return labelContext.error('Expected at least one branch label.');
             }
 
             for (const label of labels) {
                 if (label !== null && typeof label !== 'number' && typeof label !== 'string' && typeof label !== 'boolean') {
-                    throw new ParsingError(`${context.key}[${i + 1}]`, `Branch labels must be null, numbers, strings, or booleans.`);
+                    return labelContext.error(`Branch labels must be null, numbers, strings, or booleans.`);
                 } else if (!inputType) {
                     inputType = typeOf(label);
-                } else {
-                    const error = match(inputType, typeOf(label));
-                    if (error) {
-                        throw new ParsingError(`${context.key}[${i + 1}]`, error);
-                    }
+                } else if (match(inputType, typeOf(label), labelContext)) {
+                    return null;
                 }
             }
 
-            branches.push([labels, parseExpression(value, context.concat(i + 1, 'match'))]);
+            const result = parseExpression(value, context.concat(i + 1, 'match'), outputType);
+            if (!result) return null;
+            outputType = result.type;
+
+            branches.push([labels, result]);
         }
 
-        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'match'));
+        const input = parseExpression(args[0], context.concat(1, 'match'), inputType);
+        if (!input) return null;
 
-        return new MatchExpression(context.key, input, branches, otherwise);
-    }
+        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'match'), outputType);
+        if (!otherwise) return null;
 
-    typecheck(expected: Type, scope: Scope) {
-        let result = this.input.typecheck(typename('T'), scope);
-        if (result.result === 'error') {
-            return result;
-        }
-
-        for (const [ , expression] of this.branches) {
-            const result = expression.typecheck(expected || typename('T'), scope);
-
-            if (result.result === 'error') {
-                return result;
-            }
-
-            expected = result.expression.type;
-        }
-
-        result = this.otherwise.typecheck(expected || typename('T'), scope);
-        if (result.result === 'error') {
-            return result;
-        }
-
-        this.type = result.expression.type;
-
-        return {
-            result: 'success',
-            expression: this
-        };
+        assert(inputType && outputType);
+        return new Match(context.key, (inputType: any), input, branches, otherwise);
     }
 
     compile() {
@@ -128,14 +108,14 @@ class MatchExpression implements Expression {
         return result;
     }
 
-    visit(fn: (Expression) => void) {
-        fn(this);
-        this.input.visit(fn);
+    accept(visitor: Visitor<Expression>) {
+        visitor.visit(this);
+        this.input.accept(visitor);
         for (const [ , expression] of this.branches) {
-            expression.visit(fn);
+            expression.accept(visitor);
         }
-        this.otherwise.visit(fn);
+        this.otherwise.accept(visitor);
     }
 }
 
-module.exports = MatchExpression;
+module.exports = Match;

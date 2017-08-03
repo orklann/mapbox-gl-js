@@ -1,23 +1,22 @@
 // @flow
 
+const assert = require('assert');
 module.exports = compileExpression;
 
 const {
     parseExpression,
-    ParsingContext,
-    ParsingError,
-    Scope
+    ParsingContext
 } = require('./expression');
-
+const { CompoundExpression } = require('./compound_expression');
 const definitions = require('./definitions');
 const evaluationContext = require('./evaluation_context');
 
 import type { Type } from './types.js';
-import type { Expression, TypeError } from './expression.js';
+import type { Expression, ParsingError } from './expression.js';
 
 type CompileErrors = {|
     result: 'error',
-    errors: Array<TypeError>
+    errors: Array<ParsingError>
 |}
 
 type CompiledExpression = {|
@@ -55,25 +54,17 @@ function compileExpression(
     expr: mixed,
     expectedType?: Type
 ): CompiledExpression | CompileErrors {
-    let parsed;
-    try {
-        parsed = parseExpression(expr, new ParsingContext(definitions));
-    } catch (e) {
-        if (e instanceof ParsingError) {
-            return {
-                result: 'error',
-                errors: [{key: e.key, error: e.message}]
-            };
-        }
-        throw e;
+    const context = new ParsingContext(definitions);
+    const parsed = parseExpression(expr, context, expectedType);
+    if (!parsed) {
+        assert(context.errors.length > 0);
+        return {
+            result: 'error',
+            errors: context.errors
+        };
     }
 
-    const checked = parsed.typecheck(expectedType || parsed.type, new Scope());
-    if (checked.result === 'error') {
-        return checked;
-    }
-
-    const compiled = checked.expression.compile();
+    const compiled = parsed.compile();
     if (typeof compiled === 'string') {
         const fn = new Function('mapProperties', 'feature', `
 mapProperties = mapProperties || {};
@@ -85,9 +76,9 @@ return this.unwrap(${compiled})
             result: 'success',
             function: fn.bind(evaluationContext()),
             functionSource: compiled,
-            isFeatureConstant: isFeatureConstant(checked.expression),
-            isZoomConstant: isZoomConstant(checked.expression),
-            expression: checked.expression
+            isFeatureConstant: isFeatureConstant(parsed),
+            isZoomConstant: isZoomConstant(parsed),
+            expression: parsed
         };
     }
 
@@ -99,17 +90,21 @@ return this.unwrap(${compiled})
 
 function isFeatureConstant(e: Expression) {
     let result = true;
-    e.visit((expression) => {
-        if (expression instanceof definitions['get']) {
-            result = result && (expression.args.length > 1);
-        } else if (expression instanceof definitions['has']) {
-            result = result && (expression.args.length > 1);
-        } else {
-            result = result && !(
-                expression instanceof definitions['properties'] ||
-                expression instanceof definitions['geometry_type'] ||
-                expression instanceof definitions['id']
-            );
+    e.accept({
+        visit: (expression) => {
+            if (expression instanceof CompoundExpression) {
+                if (expression.name === 'get') {
+                    result = result && (expression.args.length > 1);
+                } else if (expression.name === 'has') {
+                    result = result && (expression.args.length > 1);
+                } else {
+                    result = result && !(
+                        expression.name === 'properties' ||
+                        expression.name === 'geometry_type' ||
+                        expression.name === 'id'
+                    );
+                }
+            }
         }
     });
     return result;
@@ -117,8 +112,10 @@ function isFeatureConstant(e: Expression) {
 
 function isZoomConstant(e: Expression) {
     let result = true;
-    e.visit((expression) => {
-        if (expression instanceof definitions['zoom']) result = false;
+    e.accept({
+        visit: (expression) => {
+            if (expression.name === 'zoom') result = false;
+        }
     });
     return result;
 }

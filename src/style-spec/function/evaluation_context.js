@@ -3,6 +3,7 @@
 const parseColor = require('../util/parse_color');
 const interpolate = require('../util/interpolate');
 const interpolationFactor = require('./interpolation_factor');
+const bezier = require('bezier-easing');
 const {Color, typeOf} = require('./values');
 
 import type { Value } from './values';
@@ -110,6 +111,22 @@ module.exports = () => ({
         return maybeWrapped;
     },
 
+    _bezierInterpolators: ({}: {[string]: (number) => number}),
+    _bezierInterpolation(
+        input: number,
+        controlPoints: [number, number, number, number],
+        lower: number,
+        upper: number
+    ) {
+        const key = controlPoints.join(',');
+        let easing = this._bezierInterpolators[key];
+        if (!easing) {
+            easing = this._bezierInterpolators[key] = bezier(...controlPoints);
+        }
+        const t = interpolationFactor(input, 1, lower, upper);
+        return easing(t);
+    },
+
     evaluateCurve(input: number, stopInputs: Array<number>, stopOutputs: Array<Function>, interpolation: InterpolationType, resultType: string) {
         input = this.as(input, 'Number', 'curve input');
 
@@ -124,11 +141,16 @@ module.exports = () => ({
             return stopOutputs[index]();
         }
 
-        let base = 1;
+        let t = 0;
+        const lower = stopInputs[index];
+        const upper = stopInputs[index + 1];
         if (interpolation.name === 'exponential') {
-            base = interpolation.base;
+            t = interpolationFactor(input, interpolation.base, lower, upper);
+        } else if (interpolation.name === 'linear') {
+            t = interpolationFactor(input, 1, lower, upper);
+        } else if (interpolation.name === 'cubic-bezier') {
+            t = this._bezierInterpolation(input, interpolation.controlPoints, lower, upper);
         }
-        const t = interpolationFactor(input, base, stopInputs[index], stopInputs[index + 1]);
 
         const outputLower = stopOutputs[index]();
         const outputUpper = stopOutputs[index + 1]();

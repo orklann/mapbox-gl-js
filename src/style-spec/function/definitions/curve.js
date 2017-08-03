@@ -12,7 +12,8 @@ import type { Type } from '../types';
 export type InterpolationType =
     { name: 'step' } |
     { name: 'linear' } |
-    { name: 'exponential', base: number };
+    { name: 'exponential', base: number } |
+    { name: 'cubic-bezier', controlPoints: [number, number, number, number] };
 
 type Stops = Array<[number, Expression]>;
 
@@ -54,6 +55,19 @@ class Curve implements Expression {
             interpolation = {
                 name: 'exponential',
                 base
+            };
+        } else if (interpolation[0] === 'cubic-bezier') {
+            const controlPoints = interpolation.slice(1);
+            if (
+                controlPoints.length !== 4 ||
+                controlPoints.some(t => typeof t !== 'number' || t < 0 || t > 1)
+            ) {
+                return context.error('cubic bezier interpolation requires four numeric arguments with values between 0 and 1.', 1);
+            }
+
+            interpolation = {
+                name: 'cubic-bezier',
+                controlPoints
             };
         } else {
             return context.error(`Unknown interpolation type ${String(interpolation[0])}`, 1, 0);

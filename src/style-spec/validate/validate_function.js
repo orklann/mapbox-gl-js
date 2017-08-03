@@ -7,8 +7,15 @@ const validateArray = require('./validate_array');
 const validateNumber = require('./validate_number');
 const validateExpression = require('./validate_expression');
 const unbundle = require('../util/unbundle_jsonlint');
+const extend = require('../util/extend');
 
 module.exports = function validateFunction(options) {
+    if (options.value.expression) {
+        return validateExpression(extend({}, options, {
+            disallowNestedZoom: true
+        }));
+    }
+
     const functionValueSpec = options.valueSpec;
     const functionType = unbundle(options.value.type);
     let stopKeyType;
@@ -22,10 +29,6 @@ module.exports = function validateFunction(options) {
         getType(options.value.stops) === 'array' &&
         getType(options.value.stops[0]) === 'array' &&
         getType(options.value.stops[0][0]) === 'object';
-
-    if (options.value.expression) {
-        return validateExpression(options);
-    }
 
     const errors = validateObject({
         key: options.key,

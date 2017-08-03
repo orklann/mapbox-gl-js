@@ -170,5 +170,9 @@
   {
     "message": "layers[48].paint.fill-color.expression[2]: Expected Number but found String instead.",
     "line": 911
+  },
+  {
+    "message": "layers[49].paint.fill-opacity.expression: \"zoom\" expression may only be used as input to a top-level \"curve\" expression.",
+    "line": 922
   }
 ]

@@ -912,6 +912,17 @@
           "expression": ["rgba", 1, "should be a number", 0, 1]
         }
       }
+    },
+    {
+      "id": "invalid expression - nested zoom expression",
+      "type": "fill",
+      "source": "source",
+      "source-layer": "layer",
+      "paint": {
+        "fill-opacity": {
+          "expression": ["+", 0.5, ["curve", ["linear"], ["zoom"], 0, 0, 1, 1]]
+        }
+      }
     }
   ]
 }

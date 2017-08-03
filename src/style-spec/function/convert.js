@@ -58,8 +58,8 @@ function annotateValue(value, spec) {
             ['literal', spec.values],
             [
                 'case',
-                ['has', ['property_value'], ['enum_values']],
-                ['property_value'],
+                ['has', ['var', 'property_value'], ['var', 'enum_values']],
+                ['var', 'property_value'],
                 null
             ]
         ];

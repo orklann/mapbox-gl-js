@@ -3,7 +3,7 @@
 const createFunction = require('../style-spec/function');
 const util = require('../util/util');
 
-type StyleFunction = (zoom?: number, featureProperties?: {}) => any;
+import type {StyleFunction} from '../style-spec/function';
 
 /**
  * A style property declaration

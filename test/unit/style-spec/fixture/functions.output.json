@@ -88,9 +88,6 @@
     "line": 415
   },
   {
-    "message": "layers[32].paint.fill-color.stops[0][0]: stop domain value must be a number, string, or boolean"
-  },
-  {
     "message": "layers[24].paint.fill-color.stops[1][0]: number stop domain type must match previous stop domain type string",
     "line": 434
   },
@@ -117,6 +114,10 @@
   {
     "message": "layers[31].paint.fill-color.stops[0][0]: stop domain value must be a number, string, or boolean",
     "line": 564
+  },
+  {
+    "message": "layers[32].paint.fill-color.stops[0][0]: stop domain value must be a number, string, or boolean",
+    "line": 581
   },
   {
     "message": "layers[33].paint.fill-antialias: exponential functions not supported",

@@ -19,6 +19,9 @@ export interface Expression {
     key: string;
     +type: Type;
 
+    // @param args The JSON representation of the expression to be parsed
+    // @param context
+    // @param [expectedType] The expected type of this expression. Provided only to allow parse() implementations to infer argument types: parse() need not check that the output type of the parsed expression matches `expectedType`.
     static parse(args: Array<mixed>, context: ParsingContext, expectedType?: ?Type): ?Expression;
 
     compile(): string;

@@ -1,11 +1,12 @@
 // @flow
 
+const assert = require('assert');
 const parseColor = require('../util/parse_color');
 const interpolate = require('../util/interpolate');
 const interpolationFactor = require('./interpolation_factor');
 const bezier = require('bezier-easing');
 const {parseType, NumberType, ObjectType} = require('./types');
-const {Color, typeOf} = require('./values');
+const {Color, typeOf, isValue} = require('./values');
 const {match} = require('./expression');
 
 import type { Type } from './types';
@@ -36,12 +37,15 @@ module.exports = () => ({
     error: (msg: string) => ensure(false, msg),
 
     at: function (index: number, array: Array<Value>) {
-        ensure(index < array.length, `Array index out of bounds: ${index} > ${array.length}.`);
+        ensure(index >= 0 && index < array.length,
+            `Array index out of bounds: ${index} > ${array.length}.`);
+        ensure(index === Math.floor(index),
+            `Array index must be an integer, but found ${String(index)} instead.`);
         return array[index];
     },
 
     get: function (obj: {[string]: Value}, key: string, name?: string) {
-        ensure(this.has(obj, key, name), `Property '${key}' not found in ${name || `object with keys: [${Object.keys(obj).join(', ')}]`}`);
+        ensure(this.has(obj, key, name), `Property '${key}' not found in ${name || `object`}`);
         return obj[key];
     },
 
@@ -51,10 +55,12 @@ module.exports = () => ({
     },
 
     typeOf: function (x: Value): string {
+        assert(isValue(x), `Invalid value ${String(x)}`);
         return typeOf(x).name;
     },
 
     as: function (value: Value, expectedType: string | Type, name?: string) {
+        assert(isValue(value), `Invalid value ${String(value)}`);
         const type = typeOf(value);
         if (typeof expectedType === 'string') {
             const parsed = parseType(expectedType);

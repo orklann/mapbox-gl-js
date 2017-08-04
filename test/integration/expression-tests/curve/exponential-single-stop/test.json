@@ -1,60 +1,21 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "number",
-    [
-      "curve",
-      [
-        "exponential",
-        2
-      ],
-      [
-        "number",
-        [
-          "get",
-          "x"
-        ]
-      ],
-      1,
-      2
-    ]
+    ["curve", ["exponential", 2], ["number", ["get", "x"]], 1, 2]
   ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": 0
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 1
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 2
-        }
-      }
-    ]
+  "inputs": [
+    [{}, {"properties": {"x": 0}}],
+    [{}, {"properties": {"x": 1}}],
+    [{}, {"properties": {"x": 2}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      2,
-      2,
-      2
-    ]
+    "outputs": [2, 2, 2]
   }
 }

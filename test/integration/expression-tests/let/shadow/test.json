@@ -1,33 +1,14 @@
 {
-  "expression": [
-    "let",
-    "a",
-    1,
-    [
-      "let",
-      "a",
-      2,
-      [
-        "var",
-        "a"
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["let", "a", 1, ["let", "a", 2, ["var", "a"]]],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      2
-    ]
+    "outputs": [2]
   }
 }

@@ -1,24 +1,14 @@
 {
-  "expression": [
-    "/",
-    10,
-    5
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["/", 10, 5],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      2
-    ]
+    "outputs": [2]
   }
 }

@@ -1,29 +1,13 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "let",
     "a",
     1,
-    [
-      "+",
-      [
-        "+",
-        [
-          "var",
-          "a"
-        ],
-        [
-          "var",
-          "b"
-        ]
-      ],
-      [
-        "var",
-        "a"
-      ]
-    ]
+    ["+", ["+", ["var", "a"], ["var", "b"]], ["var", "a"]]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

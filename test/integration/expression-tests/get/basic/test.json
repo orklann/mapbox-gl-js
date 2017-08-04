@@ -1,37 +1,14 @@
 {
-  "expression": [
-    "number",
-    [
-      "get",
-      "x"
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 1
-        }
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["number", ["get", "x"]],
+  "inputs": [[{}, {}], [{}, {"properties": {"x": 1}}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      {
-        "error": "Property 'x' not found in feature.properties"
-      },
-      1
-    ]
+    "outputs": [{"error": "Property 'x' not found in feature.properties"}, 1]
   }
 }

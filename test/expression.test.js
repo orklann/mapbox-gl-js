@@ -4,6 +4,7 @@ require('flow-remove-types/register');
 const util = require('../src/util/util');
 const expressionSuite = require('./integration').expression;
 const compileExpression = require('../src/style-spec/function/compile');
+const {parseType} = require('../src/style-spec/function/types');
 
 let tests;
 
@@ -12,15 +13,19 @@ if (process.argv[1] === __filename && process.argv.length > 2) {
 }
 
 expressionSuite.run('js', {tests: tests}, (fixture) => {
-    const compiled = compileExpression(fixture.expression);
+    let type;
+    if (fixture.expectExpressionType) {
+        type = parseType(fixture.expectExpressionType);
+    }
+    const compiled = compileExpression(fixture.expression, type);
 
-    const testResult = {
-        compileResult: util.pick(compiled, ['result', 'functionSource', 'isFeatureConstant', 'isZoomConstant', 'errors'])
+    const result = {
+        compiled: util.pick(compiled, ['result', 'functionSource', 'isFeatureConstant', 'isZoomConstant', 'errors'])
     };
     if (compiled.result === 'success') {
-        testResult.compileResult.type = compiled.expression.type.name;
+        result.compiled.type = compiled.expression.type.name;
 
-        const evaluate = fixture.evaluate || [];
+        const evaluate = fixture.inputs || [];
         const evaluateResults = [];
         for (const input of evaluate) {
             try {
@@ -34,15 +39,15 @@ expressionSuite.run('js', {tests: tests}, (fixture) => {
                 }
             }
         }
-        if (fixture.evaluate) {
-            testResult.evaluateResults = evaluateResults;
+        if (fixture.inputs) {
+            result.outputs = evaluateResults;
         }
     } else {
-        testResult.compileResult.errors = testResult.compileResult.errors.map((err) => ({
+        result.compiled.errors = result.compiled.errors.map((err) => ({
             key: err.key,
             error: err.message
         }));
     }
 
-    return testResult;
+    return result;
 });

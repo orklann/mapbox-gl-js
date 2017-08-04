@@ -1,24 +1,14 @@
 {
-  "expression": [
-    "%",
-    18,
-    12
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["%", 18, 12],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      6
-    ]
+    "outputs": [6]
   }
 }

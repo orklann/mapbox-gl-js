@@ -1,22 +1,14 @@
 {
-  "expression": [
-    "ln2"
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["ln2"],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      0.6931471805599453
-    ]
+    "outputs": [0.6931471805599453]
   }
 }

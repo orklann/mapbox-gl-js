@@ -1,23 +1,14 @@
 {
-  "expression": [
-    "log10",
-    100
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["log10", 100],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      2
-    ]
+    "outputs": [2]
   }
 }

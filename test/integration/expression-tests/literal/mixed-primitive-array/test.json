@@ -1,29 +1,14 @@
 {
-  "expression": [
-    "literal",
-    [
-      1,
-      "2"
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["literal", [1, "2"]],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Array<Value, 2>"
     },
-    "evaluateResults": [
-      [
-        1,
-        "2"
-      ]
-    ]
+    "outputs": [[1, "2"]]
   }
 }

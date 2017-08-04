@@ -1,79 +1,23 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "number",
-    [
-      "curve",
-      [
-        "linear"
-      ],
-      [
-        "number",
-        [
-          "get",
-          "x"
-        ]
-      ],
-      0,
-      100,
-      10,
-      200
-    ]
+    ["curve", ["linear"], ["number", ["get", "x"]], 0, 100, 10, 200]
   ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": 0
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 5
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 10
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": -1234
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 1234
-        }
-      }
-    ]
+  "inputs": [
+    [{}, {"properties": {"x": 0}}],
+    [{}, {"properties": {"x": 5}}],
+    [{}, {"properties": {"x": 10}}],
+    [{}, {"properties": {"x": -1234}}],
+    [{}, {"properties": {"x": 1234}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      100,
-      150,
-      200,
-      100,
-      200
-    ]
+    "outputs": [100, 150, 200, 100, 200]
   }
 }

@@ -1,23 +1,14 @@
 {
-  "expression": [
-    "downcase",
-    "StRiNg"
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["downcase", "StRiNg"],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
-      "string"
-    ]
+    "outputs": ["string"]
   }
 }

@@ -1,20 +1,14 @@
 {
+  "expectExpressionType": null,
   "expression": "ahoy!",
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
-      "ahoy!"
-    ]
+    "outputs": ["ahoy!"]
   }
 }

@@ -1,17 +1,9 @@
 {
-  "expression": [
-    "literal",
-    {},
-    []
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["literal", {}, []],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

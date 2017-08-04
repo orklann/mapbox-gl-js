@@ -1,46 +1,22 @@
 {
+  "expectExpressionType": "Array<String>",
   "expression": [
-    "array",
-    "string",
-    [
-      "curve",
-      [
-        "step"
-      ],
-      [
-        "number",
-        [
-          "get",
-          "x"
-        ]
-      ],
-      0,
-      [
-        "literal",
-        [
-          "one"
-        ]
-      ],
-      10,
-      [
-        "literal",
-        [
-          "one",
-          "two"
-        ]
-      ]
-    ]
+    "curve",
+    ["step"],
+    ["number", ["get", "x"]],
+    0,
+    ["literal", ["one"]],
+    10,
+    ["literal", ["one", "two"]]
   ],
-  "evaluate": [
-  ],
+  "inputs": [],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Array<String>"
     },
-    "evaluateResults": [
-    ]
+    "outputs": []
   }
 }

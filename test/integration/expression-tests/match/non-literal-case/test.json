@@ -1,19 +1,14 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "match",
     "x",
-    [
-      "string",
-      [
-        "get",
-        "y"
-      ]
-    ],
+    ["string", ["get", "y"]],
     "thing one",
     "thing two"
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

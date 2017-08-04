@@ -1,15 +1,8 @@
 {
-  "expression": [
-    "+",
-    [
-      "-",
-      0,
-      {}
-    ],
-    10
-  ],
+  "expectExpressionType": null,
+  "expression": ["+", ["-", 0, {}], 10],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

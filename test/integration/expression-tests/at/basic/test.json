@@ -1,41 +1,14 @@
 {
-  "expression": [
-    "number",
-    [
-      "at",
-      1,
-      [
-        "array",
-        [
-          "get",
-          "arr"
-        ]
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "arr": [
-            9,
-            8,
-            7
-          ]
-        }
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["number", ["at", 1, ["array", ["get", "arr"]]]],
+  "inputs": [[{}, {"properties": {"arr": [9, 8, 7]}}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      8
-    ]
+    "outputs": [8]
   }
 }

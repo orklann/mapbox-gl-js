@@ -1,25 +1,14 @@
 {
-  "expression": [
-    "concat",
-    "a",
-    "b",
-    "c"
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["concat", "a", "b", "c"],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
-      "abc"
-    ]
+    "outputs": ["abc"]
   }
 }

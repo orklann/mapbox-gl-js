@@ -1,37 +1,14 @@
 {
-  "metadata": {
-    "test": {
-      "description": "Regression test for operator precedence: false && (true ? true : true) !== (false && true) ? true: true"
-    }
-  },
-  "expression": [
-    "boolean",
-    [
-      "&&",
-      false,
-      [
-        "case",
-        true,
-        true,
-        true
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["boolean", ["&&", false, ["case", true, true, true]]],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Boolean"
     },
-    "evaluateResults": [
-      false
-    ]
+    "outputs": [false]
   }
 }

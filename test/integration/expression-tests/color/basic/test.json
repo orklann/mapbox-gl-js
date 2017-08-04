@@ -1,63 +1,22 @@
 {
-  "expression": [
-    "parse_color",
-    [
-      "string",
-      [
-        "get",
-        "x"
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": "red"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "invalid"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "rgba(0, 255, 0, 1)"
-        }
-      }
-    ]
+  "expectExpressionType": null,
+  "expression": ["parse_color", ["string", ["get", "x"]]],
+  "inputs": [
+    [{}, {"properties": {"x": "red"}}],
+    [{}, {"properties": {"x": "invalid"}}],
+    [{}, {"properties": {"x": "rgba(0, 255, 0, 1)"}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Color"
     },
-    "evaluateResults": [
-      [
-        1,
-        0,
-        0,
-        1
-      ],
-      {
-        "error": "Could not parse color from value 'invalid'"
-      },
-      [
-        0,
-        1,
-        0,
-        1
-      ]
+    "outputs": [
+      [1, 0, 0, 1],
+      {"error": "Could not parse color from value 'invalid'"},
+      [0, 1, 0, 1]
     ]
   }
 }

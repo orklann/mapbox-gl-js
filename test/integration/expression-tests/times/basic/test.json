@@ -1,26 +1,14 @@
 {
-  "expression": [
-    "*",
-    3,
-    2,
-    0.5,
-    2
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["*", 3, 2, 0.5, 2],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      6
-    ]
+    "outputs": [6]
   }
 }

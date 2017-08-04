@@ -1,10 +1,8 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "match",
-    [
-      "get",
-      "x"
-    ],
+    ["get", "x"],
     "a",
     "the letter a",
     0,
@@ -13,48 +11,17 @@
     "The Truth",
     "otherwise"
   ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": "a"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": 0
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "0"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": true
-        }
-      }
-    ]
+  "inputs": [
+    [{}, {"properties": {"x": "a"}}],
+    [{}, {"properties": {"x": 0}}],
+    [{}, {"properties": {"x": "0"}}],
+    [{}, {"properties": {"x": true}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
-        {
-          "key": "[4]",
-          "error": "Expected String but found Number instead."
-        }
+        {"key": "[4]", "error": "Expected String but found Number instead."}
       ]
     }
   }

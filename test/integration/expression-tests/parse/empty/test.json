@@ -1,7 +1,8 @@
 {
+  "expectExpressionType": null,
   "expression": [],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

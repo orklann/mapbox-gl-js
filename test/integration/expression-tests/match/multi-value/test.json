@@ -1,83 +1,31 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "string",
     [
       "match",
-      [
-        "string",
-        [
-          "get",
-          "x"
-        ]
-      ],
-      [
-        "a",
-        "A"
-      ],
+      ["string", ["get", "x"]],
+      ["a", "A"],
       "Apple",
-      [
-        "b",
-        "B"
-      ],
+      ["b", "B"],
       "Banana",
       "Kumquat"
     ]
   ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": "a"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "A"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "b"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "B"
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": "c"
-        }
-      }
-    ]
+  "inputs": [
+    [{}, {"properties": {"x": "a"}}],
+    [{}, {"properties": {"x": "A"}}],
+    [{}, {"properties": {"x": "b"}}],
+    [{}, {"properties": {"x": "B"}}],
+    [{}, {"properties": {"x": "c"}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
-      "Apple",
-      "Apple",
-      "Banana",
-      "Banana",
-      "Kumquat"
-    ]
+    "outputs": ["Apple", "Apple", "Banana", "Banana", "Kumquat"]
   }
 }

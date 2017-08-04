@@ -1,42 +1,14 @@
 {
-  "expression": [
-    "let",
-    "a",
-    [
-      "get",
-      "x"
-    ],
-    [
-      "+",
-      1,
-      [
-        "number",
-        [
-          "var",
-          "a"
-        ]
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": 5
-        }
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["let", "a", ["get", "x"], ["+", 1, ["number", ["var", "a"]]]],
+  "inputs": [[{}, {"properties": {"x": 5}}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      6
-    ]
+    "outputs": [6]
   }
 }

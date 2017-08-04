@@ -1,28 +1,14 @@
 {
-  "expression": [
-    "properties"
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": 5
-        }
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["properties"],
+  "inputs": [[{}, {"properties": {"x": 5}}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Object"
     },
-    "evaluateResults": [
-      {
-        "x": 5
-      }
-    ]
+    "outputs": [{"x": 5}]
   }
 }

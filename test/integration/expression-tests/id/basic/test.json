@@ -1,38 +1,14 @@
 {
-  "expression": [
-    "id"
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ],
-    [
-      {},
-      {
-        "id": 1
-      }
-    ],
-    [
-      {},
-      {
-        "id": "one"
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["id"],
+  "inputs": [[{}, {}], [{}, {"id": 1}], [{}, {"id": "one"}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Value"
     },
-    "evaluateResults": [
-      {
-        "error": "Property 'id' not found in feature"
-      },
-      1,
-      "one"
-    ]
+    "outputs": [{"error": "Property 'id' not found in feature"}, 1, "one"]
   }
 }

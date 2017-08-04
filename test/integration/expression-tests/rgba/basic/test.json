@@ -1,31 +1,14 @@
 {
-  "expression": [
-    "rgba",
-    0,
-    0,
-    255,
-    1
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["rgba", 0, 0, 255, 1],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Color"
     },
-    "evaluateResults": [
-      [
-        0,
-        0,
-        1,
-        1
-      ]
-    ]
+    "outputs": [[0, 0, 1, 1]]
   }
 }

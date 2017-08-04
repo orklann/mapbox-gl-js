@@ -1,20 +1,8 @@
 {
-  "expression": [
-    "!=",
-    [
-      "string",
-      [
-        "get",
-        "x"
-      ]
-    ],
-    [
-      "get",
-      "y"
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["!=", ["string", ["get", "x"]], ["get", "y"]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

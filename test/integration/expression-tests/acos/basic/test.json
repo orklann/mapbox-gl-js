@@ -1,23 +1,14 @@
 {
-  "expression": [
-    "acos",
-    0.5
-  ],
-  "evaluate": [
-    [
-      {},
-      {}
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["acos", 0.5],
+  "inputs": [[{}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      1.0471975511965976
-    ]
+    "outputs": [1.0471975511965976]
   }
 }

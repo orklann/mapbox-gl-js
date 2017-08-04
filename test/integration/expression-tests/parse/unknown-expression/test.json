@@ -1,20 +1,8 @@
 {
-  "expression": [
-    "+",
-    [
-      "*",
-      1,
-      2,
-      3,
-      [
-        "FAKE_EXPRESSION",
-        1
-      ]
-    ],
-    10
-  ],
+  "expectExpressionType": null,
+  "expression": ["+", ["*", 1, 2, 3, ["FAKE_EXPRESSION", 1]], 10],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "error",
       "errors": [
         {

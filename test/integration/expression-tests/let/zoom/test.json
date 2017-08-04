@@ -1,4 +1,5 @@
 {
+  "expectExpressionType": null,
   "expression": [
     "let",
     "z0_value",
@@ -7,41 +8,22 @@
     30,
     [
       "curve",
-      [
-        "linear"
-      ],
-      [
-        "zoom"
-      ],
+      ["linear"],
+      ["zoom"],
       0,
-      [
-        "var",
-        "z0_value"
-      ],
+      ["var", "z0_value"],
       20,
-      [
-        "var",
-        "z20_value"
-      ]
+      ["var", "z20_value"]
     ]
   ],
-  "evaluate": [
-    [
-      {
-        "zoom": 10
-      },
-      {}
-    ]
-  ],
+  "inputs": [[{"zoom": 10}, {}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": true,
       "isZoomConstant": false,
       "type": "Number"
     },
-    "evaluateResults": [
-      20
-    ]
+    "outputs": [20]
   }
 }

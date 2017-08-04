@@ -1,27 +1,16 @@
 {
-  "expression": [
-    "geometry_type"
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "geometry": {
-          "type": "LineString",
-          "coordinates": [ [0, 0], [10, 0] ]
-        }
-      }
-    ]
+  "expectExpressionType": null,
+  "expression": ["geometry_type"],
+  "inputs": [
+    [{}, {"geometry": {"type": "LineString", "coordinates": [[0, 0], [10, 0]]}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
-      "LineString"
-    ]
+    "outputs": ["LineString"]
   }
 }

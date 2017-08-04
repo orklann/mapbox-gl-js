@@ -1,33 +1,14 @@
 {
-  "expression": [
-    "length",
-    [
-      "string",
-      [
-        "get",
-        "x"
-      ]
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": "a string"
-        }
-      }
-    ]
-  ],
+  "expectExpressionType": null,
+  "expression": ["length", ["string", ["get", "x"]]],
+  "inputs": [[{}, {"properties": {"x": "a string"}}]],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "Number"
     },
-    "evaluateResults": [
-      8
-    ]
+    "outputs": [8]
   }
 }

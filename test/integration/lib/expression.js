@@ -4,6 +4,7 @@ const path = require('path');
 const harness = require('./harness');
 const diff = require('diff');
 const fs = require('fs');
+const stringify = require('json-stringify-pretty-compact');
 
 const linter = require('eslint').linter;
 
@@ -56,33 +57,33 @@ exports.run = function (implementation, options, runExpressionTest) {
             const dir = path.join(directory, params.group, params.test);
 
             if (process.env.UPDATE) {
-                delete result.compileResult.functionSource;
+                delete result.compiled.functionSource;
                 fixture.expected = result;
-                fs.writeFile(path.join(dir, 'test.json'), `${JSON.stringify(fixture, null, 2)}\n`, done);
+                fs.writeFile(path.join(dir, 'test.json'), `${stringify(fixture, null, 2)}\n`, done);
                 return;
             }
 
             const expected = fixture.expected;
 
-            if (result.compileResult.functionSource) {
-                params.compiledJs = result.compileResult.functionSource;
-                delete result.compileResult.functionSource;
+            if (result.compiled.functionSource) {
+                params.compiledJs = result.compiled.functionSource;
+                delete result.compiled.functionSource;
                 const lint = linter.verify(params.compiledJs, {
                     parserOptions: { ecmaVersion: 5 }
                 }).filter(message => message.fatal);
                 if (lint.length > 0) {
-                    result.compileResult.lintErrors = lint;
+                    result.compiled.lintErrors = lint;
                 }
             }
 
-            const compileOk = deepEqual(result.compileResult, expected.compileResult);
+            const compileOk = deepEqual(result.compiled, expected.compiled);
 
-            const evalOk = compileOk && deepEqual(result.evaluateResults, expected.evaluateResults);
+            const evalOk = compileOk && deepEqual(result.outputs, expected.outputs);
             params.ok = compileOk && evalOk;
 
             let msg = '';
             if (!compileOk) {
-                msg += diff.diffJson(expected.compileResult, result.compileResult)
+                msg += diff.diffJson(expected.compiled, result.compiled)
                     .map((hunk) => {
                         if (hunk.added) {
                             return `+ ${hunk.value}`;
@@ -95,10 +96,10 @@ exports.run = function (implementation, options, runExpressionTest) {
                     .join('');
             }
             if (compileOk && !evalOk) {
-                msg += expected.evaluateResults
+                msg += expected.outputs
                     .map((expectedOutput, i) => {
-                        if (!deepEqual(expectedOutput, result.evaluateResults[i])) {
-                            return `f(${JSON.stringify(fixture.evaluate[i])})\nExpected: ${JSON.stringify(expectedOutput)}\nActual: ${JSON.stringify(result.evaluateResults[i])}`;
+                        if (!deepEqual(expectedOutput, result.outputs[i])) {
+                            return `f(${JSON.stringify(fixture.inputs[i])})\nExpected: ${JSON.stringify(expectedOutput)}\nActual: ${JSON.stringify(result.outputs[i])}`;
                         }
                         return false;
                     })

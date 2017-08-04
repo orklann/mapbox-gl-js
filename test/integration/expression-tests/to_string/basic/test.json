@@ -1,66 +1,21 @@
 {
-  "expression": [
-    "to_string",
-    [
-      "get",
-      "x"
-    ]
-  ],
-  "evaluate": [
-    [
-      {},
-      {
-        "properties": {
-          "x": 1
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": false
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": null
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": [
-            1,
-            2
-          ]
-        }
-      }
-    ],
-    [
-      {},
-      {
-        "properties": {
-          "x": {
-            "y": 1
-          }
-        }
-      }
-    ]
+  "expectExpressionType": null,
+  "expression": ["to_string", ["get", "x"]],
+  "inputs": [
+    [{}, {"properties": {"x": 1}}],
+    [{}, {"properties": {"x": false}}],
+    [{}, {"properties": {"x": null}}],
+    [{}, {"properties": {"x": [1, 2]}}],
+    [{}, {"properties": {"x": {"y": 1}}}]
   ],
   "expected": {
-    "compileResult": {
+    "compiled": {
       "result": "success",
       "isFeatureConstant": false,
       "isZoomConstant": true,
       "type": "String"
     },
-    "evaluateResults": [
+    "outputs": [
       "1",
       "false",
       "null",

@@ -1,0 +1,19 @@
+{
+  "expectExpressionType": "Array<String>",
+  "expression": [
+    "coalesce",
+    ["literal", ["one"]],
+    ["literal", ["one", "two"]],
+    null
+  ],
+  "inputs": [],
+  "expected": {
+    "compiled": {
+      "result": "success",
+      "isFeatureConstant": true,
+      "isZoomConstant": true,
+      "type": "Array<String>"
+    },
+    "outputs": []
+  }
+}

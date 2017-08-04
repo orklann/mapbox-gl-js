@@ -76,7 +76,7 @@ function convertValue(value, spec) {
     if (spec.type === 'color') {
         return ['parse_color', value];
     } else if (spec.type === 'array') {
-        return annotateValue(['literal', value], spec);
+        return ['literal', value];
     } else {
         return value;
     }

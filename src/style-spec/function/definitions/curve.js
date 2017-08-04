@@ -6,7 +6,7 @@ const {
 } = require('../types');
 const { parseExpression } = require('../expression');
 
-import type { Expression } from '../expression';
+import type { Expression, ParsingContext } from '../expression';
 import type { Type } from '../types';
 
 export type InterpolationType =
@@ -25,15 +25,15 @@ class Curve implements Expression {
     input: Expression;
     stops: Stops;
 
-    constructor(key: string, interpolation: InterpolationType, input: Expression, stops: Stops) {
+    constructor(key: string, type: Type, interpolation: InterpolationType, input: Expression, stops: Stops) {
         this.key = key;
-        this.type = stops[0][1].type;
+        this.type = type;
         this.interpolation = interpolation;
         this.input = input;
         this.stops = stops;
     }
 
-    static parse(args, context) {
+    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
         args = args.slice(1);
         if (args.length < 4)
             return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
@@ -67,7 +67,7 @@ class Curve implements Expression {
 
             interpolation = {
                 name: 'cubic-bezier',
-                controlPoints
+                controlPoints: (controlPoints : any)
             };
         } else {
             return context.error(`Unknown interpolation type ${String(interpolation[0])}`, 1, 0);
@@ -78,7 +78,7 @@ class Curve implements Expression {
 
         const stops: Stops = [];
 
-        let outputType: Type = (null: any);
+        let outputType: Type = (expectedType: any);
         for (let i = 0; i < rest.length; i += 2) {
             const label = rest[i];
             const value = rest[i + 1];
@@ -93,7 +93,7 @@ class Curve implements Expression {
 
             const parsed = parseExpression(value, context.concat(i + 4, 'curve'), outputType);
             if (!parsed) return null;
-            outputType = parsed.type;
+            outputType = outputType || parsed.type;
             stops.push([label, parsed]);
         }
 
@@ -104,7 +104,7 @@ class Curve implements Expression {
             return context.error(`Type ${outputType.name} is not interpolatable, and thus cannot be used as a ${interpolation.name} curve's output type.`, 1);
         }
 
-        return new Curve(context.key, interpolation, input, stops);
+        return new Curve(context.key, outputType, interpolation, input, stops);
     }
 
     compile() {

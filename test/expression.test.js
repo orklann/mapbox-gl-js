@@ -34,7 +34,7 @@ expressionSuite.run('js', {tests: tests}, (fixture) => {
                 }
             }
         }
-        if (evaluateResults.length) {
+        if (fixture.evaluate) {
             testResult.evaluateResults = evaluateResults;
         }
     } else {

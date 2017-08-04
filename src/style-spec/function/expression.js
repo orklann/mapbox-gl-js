@@ -19,7 +19,7 @@ export interface Expression {
     key: string;
     +type: Type;
 
-    static parse(args: Array<mixed>, context: ParsingContext): ?Expression;
+    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: ?Type): ?Expression;
 
     compile(): string;
 
@@ -101,7 +101,7 @@ class ParsingContext {
     }
 }
 
-function parseExpression(expr: mixed, context: ParsingContext, expectedType?: Type) : ?Expression {
+function parseExpression(expr: mixed, context: ParsingContext, expectedType?: ?Type) : ?Expression {
     if (expr === null || typeof expr === 'string' || typeof expr === 'boolean' || typeof expr === 'number') {
         expr = ['literal', expr];
     }
@@ -119,7 +119,7 @@ function parseExpression(expr: mixed, context: ParsingContext, expectedType?: Ty
 
         const Expr = context.definitions[op];
         if (Expr) {
-            const parsed = Expr.parse(expr, context);
+            const parsed = Expr.parse(expr, context, expectedType);
             if (!parsed) return null;
             if (expectedType && match(expectedType, parsed.type, context)) {
                 return null;

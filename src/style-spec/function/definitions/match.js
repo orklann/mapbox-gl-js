@@ -4,7 +4,7 @@ const assert = require('assert');
 const { parseExpression, match } = require('../expression');
 const { typeOf } = require('../values');
 
-import type { Expression } from '../expression';
+import type { Expression, ParsingContext } from '../expression';
 import type { Type } from '../types';
 
 type Branches = Array<[Array<null | number | string | boolean>, Expression]>;
@@ -18,16 +18,16 @@ class Match implements Expression {
     branches: Branches;
     otherwise: Expression;
 
-    constructor(key: string, inputType: Type, input: Expression, branches: Branches, otherwise: Expression) {
+    constructor(key: string, inputType: Type, outputType: Type, input: Expression, branches: Branches, otherwise: Expression) {
         this.key = key;
-        this.type = branches[0][1].type;
         this.inputType = inputType;
+        this.type = outputType;
         this.input = input;
         this.branches = branches;
         this.otherwise = otherwise;
     }
 
-    static parse(args, context) {
+    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
         args = args.slice(1);
         if (args.length < 2)
             return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
@@ -35,7 +35,7 @@ class Match implements Expression {
             return context.error(`Expected an even number of arguments.`);
 
         let inputType;
-        let outputType;
+        let outputType = expectedType;
         const branches = [];
         for (let i = 1; i < args.length - 1; i += 2) {
             let labels = args[i];
@@ -62,9 +62,9 @@ class Match implements Expression {
 
             const result = parseExpression(value, context.concat(i + 1, 'match'), outputType);
             if (!result) return null;
-            outputType = result.type;
+            outputType = outputType || result.type;
 
-            branches.push([labels, result]);
+            branches.push([(labels: any), result]);
         }
 
         const input = parseExpression(args[0], context.concat(1, 'match'), inputType);
@@ -74,7 +74,7 @@ class Match implements Expression {
         if (!otherwise) return null;
 
         assert(inputType && outputType);
-        return new Match(context.key, (inputType: any), input, branches, otherwise);
+        return new Match(context.key, (inputType: any), (outputType: any), input, branches, otherwise);
     }
 
     compile() {

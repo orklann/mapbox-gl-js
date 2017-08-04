@@ -1,9 +1,10 @@
 // @flow
 
+const assert = require('assert');
 const { parseExpression } = require('../expression');
 const { BooleanType } = require('../types');
 
-import type { Expression } from '../expression';
+import type { Expression, ParsingContext } from '../expression';
 import type { Type } from '../types';
 
 type Branches = Array<[Expression, Expression]>;
@@ -15,21 +16,21 @@ class Case implements Expression {
     branches: Branches;
     otherwise: Expression;
 
-    constructor(key: string, branches: Branches, otherwise: Expression) {
+    constructor(key: string, type: Type, branches: Branches, otherwise: Expression) {
         this.key = key;
-        this.type = branches[0][1].type;
+        this.type = type;
         this.branches = branches;
         this.otherwise = otherwise;
     }
 
-    static parse(args, context) {
+    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
         args = args.slice(1);
         if (args.length < 3)
             return context.error(`Expected at least 3 arguments, but found only ${args.length}.`);
         if (args.length % 2 === 0)
             return context.error(`Expected an odd number of arguments.`);
 
-        let outputType: Type = (null: any);
+        let outputType: ?Type = expectedType;
 
         const branches = [];
         for (let i = 0; i < args.length - 1; i += 2) {
@@ -41,13 +42,14 @@ class Case implements Expression {
 
             branches.push([test, result]);
 
-            outputType = result.type;
+            outputType = outputType || result.type;
         }
 
         const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'case'), outputType);
         if (!otherwise) return null;
 
-        return new Case(context.key, branches, otherwise);
+        assert(outputType);
+        return new Case(context.key, (outputType: any), branches, otherwise);
     }
 
     compile() {

@@ -9,7 +9,7 @@ const {
     BooleanType
 } = require('../types');
 
-import type { Expression } from '../expression';
+import type { Expression, ParsingContext } from '../expression';
 import type { ArrayType } from '../types';
 
 const types = {
@@ -29,7 +29,7 @@ class ArrayAssertion implements Expression {
         this.input = input;
     }
 
-    static parse(args, context) {
+    static parse(args: Array<mixed>, context: ParsingContext): ?Expression {
         if (args.length < 2 || args.length > 4)
             return context.error(`Expected 1, 2, or 3 arguments, but found ${args.length - 1} instead.`);
 
@@ -37,7 +37,7 @@ class ArrayAssertion implements Expression {
         let N;
         if (args.length > 2) {
             const type = args[1];
-            if (!(type in types))
+            if (typeof type !== 'string' || !(type in types))
                 return context.error('The item type argument of "array" must be one of string, number, boolean', 1);
             itemType = types[type];
         } else {

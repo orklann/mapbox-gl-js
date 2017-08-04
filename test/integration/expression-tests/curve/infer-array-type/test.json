@@ -1,0 +1,46 @@
+{
+  "expression": [
+    "array",
+    "string",
+    [
+      "curve",
+      [
+        "step"
+      ],
+      [
+        "number",
+        [
+          "get",
+          "x"
+        ]
+      ],
+      0,
+      [
+        "literal",
+        [
+          "one"
+        ]
+      ],
+      10,
+      [
+        "literal",
+        [
+          "one",
+          "two"
+        ]
+      ]
+    ]
+  ],
+  "evaluate": [
+  ],
+  "expected": {
+    "compileResult": {
+      "result": "success",
+      "isFeatureConstant": false,
+      "isZoomConstant": true,
+      "type": "Array<String>"
+    },
+    "evaluateResults": [
+    ]
+  }
+}

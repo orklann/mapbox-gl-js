@@ -1,6 +1,6 @@
 // @flow
 
-const { parseExpression, ParsingError } = require('../expression');
+const { parseExpression } = require('../expression');
 const {
     array,
     ValueType,
@@ -25,7 +25,7 @@ class At implements Expression {
 
     static parse(args, context) {
         if (args.length !== 3)
-            throw new ParsingError(context.key, `Expected 2 arguments, but found ${args.length - 1} instead.`);
+            return context.error(`Expected 2 arguments, but found ${args.length - 1} instead.`);
 
         const index = parseExpression(args[1], context.concat(1, 'at'), NumberType);
         const input = parseExpression(args[2], context.concat(2, 'at'), array(ValueType));

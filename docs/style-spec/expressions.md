@@ -121,7 +121,7 @@ Every expression evaluates to a value of one of the following types.
 - `[ "e" ] -> Number`
 
 ### Variable binding:
-- `[ "let", name1: String, e1, name2: String, e2, ..., e_result ]` - Bind expression `e1` to the string `name1`, `e2` to `name2`, etc., before evaluating `e_result`.  The bound expressions may be referenced within `e_result` with `[ name1 ]`, `[ name2 ]`, etc. (E.g.: `["let", "a", 1, "b", ["number", ["get", "blah"]], [ "+", ["a"], ["b"] ]`.)
+- `[ "let", name1: String, e1, name2: String, e2, ..., e_result ]` - Bind expression `e1` to the string `name1`, `e2` to `name2`, etc., before evaluating `e_result`.  The bound expressions may be referenced within `e_result` with `[ "var", name1 ]`, `[ "var", name2 ]`, etc. (E.g.: `["let", "a", 1, "b", ["number", ["get", "blah"]], [ "+", ["var", "a"], ["var", "b"] ]`.)
 
 ### Type assertion:
 Assert that the argument is of a specific type, producing a runtime error if it is not.
@@ -129,6 +129,7 @@ Assert that the argument is of a specific type, producing a runtime error if it 
 - `["string", e: Value] -> String`
 - `["number", e:Value] -> Number`
 - `["boolean", e:Value] -> Boolean`
+- `["object", e:Value] -> Object`
 - `["array", e:Value] -> Array`
 - `["array", T, length, e: Value] -> Array<T, length>`
 

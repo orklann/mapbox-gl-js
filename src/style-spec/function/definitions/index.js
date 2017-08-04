@@ -48,6 +48,7 @@ CompoundExpression.register(expressions, {
     'string': defineAssertion(StringType),
     'number': defineAssertion(NumberType),
     'boolean': defineAssertion(BooleanType),
+    'object': defineAssertion(ObjectType),
     'to_string': [ StringType, [ValueType], fromContext('toString') ],
     'to_number': [ NumberType, [ValueType], fromContext('toNumber') ],
     'to_boolean': [ BooleanType, [ValueType], ([v]) => `Boolean(${v})` ],

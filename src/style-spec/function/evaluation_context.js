@@ -4,8 +4,11 @@ const parseColor = require('../util/parse_color');
 const interpolate = require('../util/interpolate');
 const interpolationFactor = require('./interpolation_factor');
 const bezier = require('bezier-easing');
+const {parseType, NumberType, ObjectType} = require('./types');
 const {Color, typeOf} = require('./values');
+const {match} = require('./expression');
 
+import type { Type } from './types';
 import type { Value } from './values';
 import type { InterpolationType } from './definitions/curve';
 
@@ -44,22 +47,28 @@ module.exports = () => ({
 
     has: function (obj: {[string]: Value}, key: string, name?: string) {
         ensure(obj, `Cannot get property ${key} from null object${name ? ` ${name}` : ''}.`);
-        return this.as(obj, 'Object', name).hasOwnProperty(key);
+        return this.as(obj, ObjectType, name).hasOwnProperty(key);
     },
 
     typeOf: function (x: Value): string {
         return typeOf(x).name;
     },
 
-    // type assertion
-    as: function (value: Value, expectedType: string, name?: string) {
-        const type = this.typeOf(value);
-        if (expectedType === 'Array') {
-            ensure(/Array(<(string|number|boolean)>)?/.test(type),
-                `Expected ${name || 'value'} to be an Array, but found ${type} instead.`);
-        } else {
-            ensure(type === expectedType, `Expected ${name || 'value'} to be of type ${expectedType}, but found ${type} instead.`);
+    as: function (value: Value, expectedType: string | Type, name?: string) {
+        const type = typeOf(value);
+        if (typeof expectedType === 'string') {
+            const parsed = parseType(expectedType);
+            if (!parsed) {
+                throw new RuntimeError(`Unknown type ${expectedType}`);
+            }
+            expectedType = parsed;
         }
+        // At compile time, types are nullable, but for runtime type
+        // assertions, check that the value is a non-null instance of the
+        // expected type.
+        const typeError = (value === null && expectedType.name !== 'Null') ||
+            match(expectedType, type);
+        ensure(!typeError, `Expected ${name || 'value'} to be of type ${expectedType.name}, but found ${type.name} instead.`);
         return value;
     },
 
@@ -128,7 +137,7 @@ module.exports = () => ({
     },
 
     evaluateCurve(input: number, stopInputs: Array<number>, stopOutputs: Array<Function>, interpolation: InterpolationType, resultType: string) {
-        input = this.as(input, 'Number', 'curve input');
+        input = this.as(input, NumberType, 'curve input');
 
         const stopCount = stopInputs.length;
         if (stopInputs.length === 1) return stopOutputs[0]();

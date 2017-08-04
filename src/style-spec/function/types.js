@@ -26,6 +26,33 @@ function array(itemType: Type, N: ?number) : ArrayType {
     };
 }
 
+const types = {
+    'Null': NullType,
+    'String': StringType,
+    'Number': NumberType,
+    'Boolean': BooleanType,
+    'Object': ObjectType,
+    'Color': ColorType,
+    'Value': ValueType
+};
+
+const arrayPattern = /^Array(<([^,>]+)(\s*,\s*([0-9])+)?>)?$/;
+function parseType (type: string): Type | null {
+    if (types[type]) {
+        return types[type];
+    }
+
+    const match = arrayPattern.exec(type);
+    // Consider caching this so we don't reparse "Array<...>" repeatedly.
+    if (match) {
+        const itemType = parseType(match[2] || 'Value');
+        if (!itemType) return null;
+        const N = match[4] ? parseInt(match[4], 10) : undefined;
+        return array(itemType, N);
+    }
+    return null;
+}
+
 module.exports = {
     NullType,
     NumberType,
@@ -34,5 +61,6 @@ module.exports = {
     ColorType,
     ObjectType,
     ValueType,
-    array
+    array,
+    parseType
 };

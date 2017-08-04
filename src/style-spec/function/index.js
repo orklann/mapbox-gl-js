@@ -82,8 +82,8 @@ function createFunction(parameters: FunctionSpecification, propertySpec: StylePr
                 // should be prevented by validation.
                 throw new Error(curve ? curve.error : 'Invalid zoom expression');
             }
-            const serialized = curve.serialize();
-            const interpolation = serialized[1];
+
+            const interpolation = curve.serialize()[1];
 
             f.zoomStops = [];
             for (const stop of curve.stops) {

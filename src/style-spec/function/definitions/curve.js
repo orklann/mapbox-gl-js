@@ -134,6 +134,8 @@ class Curve implements Expression {
         const interp = [this.interpolation.name];
         if (this.interpolation.name === 'exponential') {
             interp.push(this.interpolation.base);
+        } else if (this.interpolation.name === 'cubic-bezier') {
+            interp.push.apply(interp, this.interpolation.controlPoints);
         }
         result.push(interp);
         result.push(this.input.serialize());

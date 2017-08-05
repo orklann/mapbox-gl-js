@@ -1,8 +1,5 @@
 // @flow
 
-const Buffer = require('../data/buffer');
-const VertexArrayObject = require('./vertex_array_object');
-const PosArray = require('../data/pos_array');
 const glMatrix = require('@mapbox/gl-matrix');
 const pattern = require('./pattern');
 const mat3 = glMatrix.mat3;
@@ -31,7 +28,7 @@ function draw(painter: Painter, source: SourceCache, layer: FillExtrusionStyleLa
         }
     } else if (painter.renderPass === 'translucent') {
         drawExtrusionTexture(painter, layer);
-    };
+    }
 }
 
 function drawExtrusionTexture(painter, layer) {

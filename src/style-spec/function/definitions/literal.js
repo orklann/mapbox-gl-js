@@ -17,7 +17,7 @@ class Literal implements Expression {
         this.value = value;
     }
 
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: ?Type) {
+    static parse(args: Array<mixed>, context: ParsingContext) {
         if (args.length !== 2)
             return context.error(`'literal' expression requires exactly one argument, but found ${args.length - 1} instead.`);
 
@@ -28,14 +28,15 @@ class Literal implements Expression {
         let type = typeOf(value);
 
         // special case: infer the item type if possible for zero-length arrays
+        const expected = context.expectedType;
         if (
             type.kind === 'array' &&
             type.N === 0 &&
-            expectedType &&
-            expectedType.kind === 'array' &&
-            (typeof expectedType.N !== 'number' || expectedType.N === 0)
+            expected &&
+            expected.kind === 'array' &&
+            (typeof expected.N !== 'number' || expected.N === 0)
         ) {
-            type = expectedType;
+            type = expected;
         }
 
         return new Literal(context.key, type, value);

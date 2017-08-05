@@ -23,12 +23,12 @@ class At implements Expression {
         this.input = input;
     }
 
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
+    static parse(args: Array<mixed>, context: ParsingContext) {
         if (args.length !== 3)
             return context.error(`Expected 2 arguments, but found ${args.length - 1} instead.`);
 
-        const index = parseExpression(args[1], context.concat(1, 'at'), NumberType);
-        const input = parseExpression(args[2], context.concat(2, 'at'), array(expectedType || ValueType));
+        const index = parseExpression(args[1], context.concat(1, NumberType));
+        const input = parseExpression(args[2], context.concat(2, array(context.expectedType || ValueType)));
 
         if (!index || !input) return null;
 

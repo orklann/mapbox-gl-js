@@ -63,7 +63,7 @@ class CompoundExpression implements Expression {
         // First parse all the args
         const parsedArgs: Array<Expression> = [];
         for (const arg of args.slice(1)) {
-            const parsed = parseExpression(arg, context.concat(1 + parsedArgs.length, op));
+            const parsed = parseExpression(arg, context.concat(1 + parsedArgs.length));
             if (!parsed) return null;
             parsedArgs.push(parsed);
         }
@@ -78,7 +78,10 @@ class CompoundExpression implements Expression {
         let signatureContext: ParsingContext = (null: any);
 
         for (const [params, compileFromArgs] of overloads) {
-            signatureContext = new ParsingContext(context.definitions, context.path, context.ancestors, context.scope);
+            // Use a fresh context for each attempted signature so that, if
+            // we eventually succeed, we haven't polluted `context.errors`.
+            signatureContext = new ParsingContext(context.definitions, context.path, null, context.scope);
+
             if (Array.isArray(params)) {
                 if (params.length !== parsedArgs.length) {
                     signatureContext.error(`Expected ${params.length} arguments, but found ${parsedArgs.length} instead.`);
@@ -89,7 +92,7 @@ class CompoundExpression implements Expression {
             for (let i = 0; i < parsedArgs.length; i++) {
                 const expected = Array.isArray(params) ? params[i] : params.type;
                 const arg = parsedArgs[i];
-                match(expected, arg.type, signatureContext.concat(i + 1, op));
+                match(expected, arg.type, signatureContext.concat(i + 1));
             }
 
             if (signatureContext.errors.length === 0) {

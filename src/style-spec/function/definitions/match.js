@@ -27,7 +27,7 @@ class Match implements Expression {
         this.otherwise = otherwise;
     }
 
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
+    static parse(args: Array<mixed>, context: ParsingContext) {
         args = args.slice(1);
         if (args.length < 2)
             return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
@@ -35,7 +35,7 @@ class Match implements Expression {
             return context.error(`Expected an even number of arguments.`);
 
         let inputType;
-        let outputType = expectedType;
+        let outputType = context.expectedType;
         const branches = [];
         for (let i = 1; i < args.length - 1; i += 2) {
             let labels = args[i];
@@ -45,7 +45,7 @@ class Match implements Expression {
                 labels = [labels];
             }
 
-            const labelContext = context.concat(i + 1, 'match');
+            const labelContext = context.concat(i + 1);
             if (labels.length === 0) {
                 return labelContext.error('Expected at least one branch label.');
             }
@@ -60,17 +60,17 @@ class Match implements Expression {
                 }
             }
 
-            const result = parseExpression(value, context.concat(i + 1, 'match'), outputType);
+            const result = parseExpression(value, context.concat(i + 1, outputType));
             if (!result) return null;
             outputType = outputType || result.type;
 
             branches.push([(labels: any), result]);
         }
 
-        const input = parseExpression(args[0], context.concat(1, 'match'), inputType);
+        const input = parseExpression(args[0], context.concat(1, inputType));
         if (!input) return null;
 
-        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, 'match'), outputType);
+        const otherwise = parseExpression(args[args.length - 1], context.concat(args.length, outputType));
         if (!otherwise) return null;
 
         assert(inputType && outputType);

@@ -17,13 +17,13 @@ class Coalesce implements Expression {
         this.args = args;
     }
 
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
+    static parse(args: Array<mixed>, context: ParsingContext) {
         args = args.slice(1);
-        let outputType = expectedType;
+        let outputType = context.expectedType;
         const parsedArgs = [];
         for (const arg of args) {
-            const argContext = context.concat(1 + parsedArgs.length, 'coalesce');
-            const parsed = parseExpression(arg, argContext, outputType);
+            const argContext = context.concat(1 + parsedArgs.length, outputType);
+            const parsed = parseExpression(arg, argContext);
             if (!parsed) return null;
             outputType = outputType || parsed.type;
             parsedArgs.push(parsed);

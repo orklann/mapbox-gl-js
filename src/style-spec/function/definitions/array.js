@@ -57,7 +57,7 @@ class ArrayAssertion implements Expression {
 
         const type = array(itemType, N);
 
-        const input = parseExpression(args[args.length - 1], context.concat(args.length - 1, 'array'), ValueType);
+        const input = parseExpression(args[args.length - 1], context.concat(args.length - 1, ValueType));
         if (!input) return null;
 
         return new ArrayAssertion(context.key, type, input);

@@ -54,8 +54,8 @@ function compileExpression(
     expr: mixed,
     expectedType?: Type
 ): CompiledExpression | CompileErrors {
-    const context = new ParsingContext(definitions);
-    const parsed = parseExpression(expr, context, expectedType);
+    const context = new ParsingContext(definitions, [], expectedType || null);
+    const parsed = parseExpression(expr, context);
     if (!parsed) {
         assert(context.errors.length > 0);
         return {

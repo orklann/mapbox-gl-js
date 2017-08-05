@@ -19,10 +19,7 @@ export interface Expression {
     key: string;
     +type: Type;
 
-    // @param args The JSON representation of the expression to be parsed
-    // @param context
-    // @param [expectedType] The expected type of this expression. Provided only to allow parse() implementations to infer argument types: parse() need not check that the output type of the parsed expression matches `expectedType`.
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: ?Type): ?Expression;
+    static parse(args: Array<mixed>, context: ParsingContext): ?Expression;
 
     compile(): string;
 
@@ -41,6 +38,10 @@ class ParsingError extends Error {
     }
 }
 
+/**
+ * Tracks `let` bindings during expression parsing.
+ * @private
+ */
 class Scope {
     parent: ?Scope;
     bindings: {[string]: Expression};
@@ -68,35 +69,65 @@ class Scope {
     }
 }
 
+/**
+ * State associated parsing at a given point in an expression tree.
+ * @private
+ */
 class ParsingContext {
-    key: string;
-    path: Array<number>;
-    ancestors: Array<string>;
     definitions: {[string]: Class<Expression>};
+    path: Array<number>;
+    key: string;
     scope: Scope;
     errors: Array<ParsingError>;
 
-    constructor(definitions: *, path: Array<number> = [], ancestors: * = [], scope: Scope = new Scope(), errors: Array<ParsingError> = []) {
+    // The expected type of this expression. Provided only to allow Expression
+    // implementations to infer argument types: Expression#parse() need not
+    // check that the output type of the parsed expression matches
+    // `expectedType`.
+    expectedType: ?Type;
+
+    constructor(
+        definitions: *,
+        path: Array<number> = [],
+        expectedType: ?Type,
+        scope: Scope = new Scope(),
+        errors: Array<ParsingError> = []
+    ) {
         this.definitions = definitions;
         this.path = path;
         this.key = path.map(part => `[${part}]`).join('');
-        this.ancestors = ancestors;
         this.scope = scope;
         this.errors = errors;
+        this.expectedType = expectedType;
     }
 
-    // Returns a copy of this context suitable for parsing the subexpression at
-    // index `index`, optionally appending to 'let' binding map.
-    //
-    // Note that `errors` property, intended for collecting errors while
-    // parsing, is copied by reference rather than cloned.
-    concat(index: number, expressionName: string, bindings?: Array<[string, Expression]>) {
+    /**
+     * Returns a copy of this context suitable for parsing the subexpression at
+     * index `index`, optionally appending to 'let' binding map.
+     *
+     * Note that `errors` property, intended for collecting errors while
+     * parsing, is copied by reference rather than cloned.
+     * @private
+     */
+    concat(index: number, expectedType?: ?Type, bindings?: Array<[string, Expression]>) {
         const path = typeof index === 'number' ? this.path.concat(index) : this.path;
-        const ancestors = expressionName ? this.ancestors.concat(expressionName) : this.ancestors;
         const scope = bindings ? this.scope.concat(bindings) : this.scope;
-        return new ParsingContext(this.definitions, path, ancestors, scope, this.errors);
+        return new ParsingContext(
+            this.definitions,
+            path,
+            expectedType || null,
+            scope,
+            this.errors
+        );
     }
 
+    /**
+     * Push a parsing (or type checking) error into the `this.errors`
+     * @param error The message
+     * @param keys Optionally specify the source of the error at a child
+     * of the current expression at `this.key`.
+     * @private
+     */
     error(error: string, ...keys: Array<number>) {
         const key = `${this.key}${keys.map(k => `[${k}]`).join('')}`;
         this.errors.push(new ParsingError(key, error));
@@ -104,7 +135,16 @@ class ParsingContext {
     }
 }
 
-function parseExpression(expr: mixed, context: ParsingContext, expectedType?: ?Type) : ?Expression {
+/**
+ * Parse the given JSON expression.
+ *
+ * @param expectedType If provided, the parsed expression will be checked
+ * against this type.  Additionally, `expectedType` will be pssed to
+ * Expression#parse(), wherein it may be used to infer child expression types
+ *
+ * @private
+ */
+function parseExpression(expr: mixed, context: ParsingContext) : ?Expression {
     if (expr === null || typeof expr === 'string' || typeof expr === 'boolean' || typeof expr === 'number') {
         expr = ['literal', expr];
     }
@@ -122,9 +162,9 @@ function parseExpression(expr: mixed, context: ParsingContext, expectedType?: ?T
 
         const Expr = context.definitions[op];
         if (Expr) {
-            const parsed = Expr.parse(expr, context, expectedType);
+            const parsed = Expr.parse(expr, context);
             if (!parsed) return null;
-            if (expectedType && match(expectedType, parsed.type, context)) {
+            if (context.expectedType && match(context.expectedType, parsed.type, context)) {
                 return null;
             } else {
                 return parsed;
@@ -144,9 +184,8 @@ function parseExpression(expr: mixed, context: ParsingContext, expectedType?: ?T
 /**
  * Returns null if the type matches, or an error message if not.
  *
- * Also populate the given typenames context when a generic type is successfully
- * matched against a concrete one, with `scope` controlling whether type names
- * from `expected` or `t` are to be bound.
+ * If `context` is provided, then also push the error to it via
+ * `context.error()`
  *
  * @private
  */

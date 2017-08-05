@@ -33,7 +33,7 @@ class Curve implements Expression {
         this.stops = stops;
     }
 
-    static parse(args: Array<mixed>, context: ParsingContext, expectedType?: Type) {
+    static parse(args: Array<mixed>, context: ParsingContext) {
         args = args.slice(1);
         if (args.length < 4)
             return context.error(`Expected at least 2 arguments, but found only ${args.length}.`);
@@ -73,12 +73,12 @@ class Curve implements Expression {
             return context.error(`Unknown interpolation type ${String(interpolation[0])}`, 1, 0);
         }
 
-        input = parseExpression(input, context.concat(2, 'curve'), NumberType);
+        input = parseExpression(input, context.concat(2, NumberType));
         if (!input) return null;
 
         const stops: Stops = [];
 
-        let outputType: Type = (expectedType: any);
+        let outputType: Type = (context.expectedType: any);
         for (let i = 0; i < rest.length; i += 2) {
             const label = rest[i];
             const value = rest[i + 1];
@@ -91,7 +91,7 @@ class Curve implements Expression {
                 return context.error('Input/output pairs for "curve" expressions must be arranged with input values in strictly ascending order.', i + 3);
             }
 
-            const parsed = parseExpression(value, context.concat(i + 4, 'curve'), outputType);
+            const parsed = parseExpression(value, context.concat(i + 4, outputType));
             if (!parsed) return null;
             outputType = outputType || parsed.type;
             stops.push([label, parsed]);

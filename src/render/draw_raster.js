@@ -10,7 +10,8 @@ import type TileCoord from '../source/tile_coord';
 module.exports = drawRaster;
 
 function drawRaster(painter: Painter, sourceCache: SourceCache, layer: StyleLayer, coords: Array<TileCoord>) {
-    if (painter.isOpaquePass) return;
+    const pass = 'translucent';
+    if (painter.renderPass !== pass) return;
 
     const gl = painter.gl;
 

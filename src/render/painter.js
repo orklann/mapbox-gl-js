@@ -22,7 +22,6 @@ const draw = {
     line: require('./draw_line'),
     fill: require('./draw_fill'),
     'fill-extrusion': require('./draw_fill_extrusion'),
-    'fill-extrusion-texture': require('./draw_fill_extrusion_texture'),
     raster: require('./draw_raster'),
     background: require('./draw_background'),
     debug: require('./draw_debug')
@@ -37,6 +36,8 @@ import type StyleLayer from '../style/style_layer';
 import type LineAtlas from './line_atlas';
 import type SpriteAtlas from '../symbol/sprite_atlas';
 import type GlyphSource from '../symbol/glyph_source';
+
+export type RenderPass = '3d' | 'opaque' | 'translucent';
 
 type PainterOptions = {
     showOverdrawInspector: boolean,
@@ -84,7 +85,7 @@ class Painter {
     spriteAtlas: SpriteAtlas;
     glyphSource: GlyphSource;
     depthRange: number;
-    isOpaquePass: boolean;
+    renderPass: RenderPass;
     currentLayer: number;
     id: string;
     _showOverdrawInspector: boolean;
@@ -124,8 +125,8 @@ class Painter {
         this.height = height * browser.devicePixelRatio;
         gl.viewport(0, 0, this.width, this.height);
 
-        for (let i = 0; i < this.viewportTextures.length; i++) {
-            this.gl.deleteTexture(this.viewportTextures[i].texture);
+        for (const texture of this.viewportTextures) {
+            this.gl.deleteTexture(texture.texture);
         }
         this.viewportTextures = [];
 
@@ -273,9 +274,82 @@ class Painter {
 
         this.frameHistory.record(Date.now(), this.transform.zoom, style.getTransition().duration);
 
-        this.isOpaquePass = false;
-        this.render3D();
+        const layerIds = this.style._order;
 
+        // 3D pass
+        // We first bind an offscreen framebuffer and render each 3D layer to
+        // its own texture, which we'll use later in the translucent pass to
+        // render to the main framebuffer. By doing this before we render to
+        // the main framebuffer we won't have to do an expensive framebuffer
+        // restore mid-render pass.
+        this.renderPass = '3d';
+        {
+            const gl = this.gl;
+            // We'll wait and only attach the framebuffer if we think we're
+            // rendering something.
+            let fboAttached = false;
+
+            let sourceCache;
+            let coords = [];
+
+            for (let i = 0; i < layerIds.length; i++) {
+                const layer = this.style._layers[layerIds[i]];
+
+                if (!layer.has3DPass()) continue;
+
+                if (layer.paint['fill-extrusion-opacity'] === 0 || layer.isHidden(this.transform.zoom)) {
+                    // Don't bother creating a texture if we're not going
+                    // to render anything: emplace a null value as a marker
+                    // for the regular translucent render pass.
+                    this._prerenderedTextures[layer.id] = null;
+                } else {
+                    if (layer.source !== (sourceCache && sourceCache.id)) {
+                        sourceCache = this.style.sourceCaches[layer.source];
+                        coords = [];
+
+                        if (sourceCache) {
+                            if (sourceCache.prepare) sourceCache.prepare();
+                            this.clearStencil();
+                            coords = sourceCache.getVisibleCoordinates();
+                        }
+
+                        coords.reverse();
+                    }
+
+                    if (!coords.length) {
+                        this._prerenderedTextures[layer.id] = null;
+                        continue;
+                    }
+
+                    if (!fboAttached) {
+                        this._setup3DFramebuffer();
+                        // Wait to flip the boolean until after we attach the first
+                        // texture and clear the depth buffer a few lines down.
+                    }
+
+                    let renderTarget = this.viewportTextures.pop();
+                    if (!renderTarget) {
+                        renderTarget = new RenderTexture(this);
+                    }
+                    renderTarget.attachToFramebuffer();
+
+                    if (!fboAttached) {
+                        this.clearDepth();
+                        fboAttached = true;
+                    }
+
+                    this.renderLayer(this, (sourceCache: any), layer, coords);
+
+                    renderTarget.detachFromFramebuffer();
+
+                    this._prerenderedTextures[layer.id] = renderTarget;
+                }
+            }
+
+            if (fboAttached) gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+        // Clear buffers in preparation for drawing to the main framebuffer
         this.prepareBuffers();
         this.clearColor();
         this.clearDepth();
@@ -284,43 +358,22 @@ class Painter {
 
         this.depthRange = (style._order.length + 2) * this.numSublayers * this.depthEpsilon;
 
-        this.isOpaquePass = true;
-        this.renderPass();
-        this.isOpaquePass = false;
-        this.renderPass();
+        // Opaque pass
+        // Draw opaque layers top-to-bottom first.
+        this.renderPass = 'opaque';
+        {
+            let sourceCache;
+            let coords = [];
 
-        if (this.options.showTileBoundaries) {
-            const sourceCache = this.style.sourceCaches[Object.keys(this.style.sourceCaches)[0]];
-            if (sourceCache) {
-                draw.debug(this, sourceCache, sourceCache.getVisibleCoordinates());
+            this.currentLayer = layerIds.length - 1;
+
+            if (!this._showOverdrawInspector) {
+                this.gl.disable(this.gl.BLEND);
             }
-        }
-    }
 
-    render3D() {
-        // If this style has 3D (fill-extrusion) layers, we render them first
-        // to offscreen textures so that we don't have to do an expensive
-        // framebuffer restore in the middle of the translucent renderPass.
-        if (!this.style._order3D.length) return;
+            for (this.currentLayer; this.currentLayer >= 0; this.currentLayer--) {
+                const layer = this.style._layers[layerIds[this.currentLayer]];
 
-        const gl = this.gl;
-        // We'll wait and only attach the framebuffer if we think we're
-        // rendering something.
-        let fboAttached = false;
-
-        let sourceCache;
-        let coords = [];
-
-        for (let i = 0; i < this.style._order3D.length; i++) {
-            const layerId = this.style._order3D[i];
-            const layer = this.style._layers[layerId];
-
-            if (layer.paint['fill-extrusion-opacity'] === 0 || layer.isHidden(this.transform.zoom)) {
-                // Don't bother creating a texture if we're not going
-                // to render anything: emplace a null value as a marker
-                // for the regular translucent render pass.
-                this._prerenderedTextures[layerId] = null;
-            } else {
                 if (layer.source !== (sourceCache && sourceCache.id)) {
                     sourceCache = this.style.sourceCaches[layer.source];
                     coords = [];
@@ -329,42 +382,56 @@ class Painter {
                         if (sourceCache.prepare) sourceCache.prepare();
                         this.clearStencil();
                         coords = sourceCache.getVisibleCoordinates();
+                        if (sourceCache.getSource().isTileClipped) {
+                            this._renderTileClippingMasks(coords);
+                        }
+                    }
+                }
+
+                this.renderLayer(this, (sourceCache: any), layer, coords);
+            }
+        }
+
+        // Translucent pass
+        // Draw all other layers bottom-to-top.
+        this.renderPass = 'translucent';
+        {
+            let sourceCache;
+            let coords = [];
+
+            this.gl.enable(this.gl.BLEND);
+
+            this.currentLayer = 0;
+
+            for (this.currentLayer; this.currentLayer < layerIds.length; this.currentLayer++) {
+                const layer = this.style._layers[layerIds[this.currentLayer]];
+
+                if (layer.source !== (sourceCache && sourceCache.id)) {
+                    sourceCache = this.style.sourceCaches[layer.source];
+                    coords = [];
+
+                    if (sourceCache) {
+                        if (sourceCache.prepare) sourceCache.prepare();
+                        this.clearStencil();
+                        coords = sourceCache.getVisibleCoordinates();
+                        if (sourceCache.getSource().isTileClipped) {
+                            this._renderTileClippingMasks(coords);
+                        }
                     }
 
                     coords.reverse();
                 }
 
-                if (!coords.length) {
-                    this._prerenderedTextures[layerId] = null;
-                    continue;
-                }
-
-                if (!fboAttached) {
-                    this._setup3DFramebuffer();
-                    // Wait to flip the boolean until after we attach the first
-                    // texture and clear the depth buffer a few lines down.
-                }
-
-                let renderTarget = this.viewportTextures.pop();
-                if (!renderTarget) {
-                    renderTarget = new RenderTexture(this);
-                }
-                renderTarget.attachToFramebuffer();
-
-                if (!fboAttached) {
-                    this.clearDepth();
-                    fboAttached = true;
-                }
-
                 this.renderLayer(this, (sourceCache: any), layer, coords);
-
-                renderTarget.detachFromFramebuffer();
-
-                this._prerenderedTextures[layerId] = renderTarget;
             }
         }
 
-        if (fboAttached) gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        if (this.options.showTileBoundaries) {
+            const sourceCache = this.style.sourceCaches[Object.keys(this.style.sourceCaches)[0]];
+            if (sourceCache) {
+                draw.debug(this, sourceCache, sourceCache.getVisibleCoordinates());
+            }
+        }
     }
 
     _setup3DFramebuffer() {
@@ -382,58 +449,6 @@ class Painter {
             this.viewportFbo = fbo;
         } else {
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        }
-    }
-
-    renderPass() {
-        const layerIds = this.style._order;
-
-        let sourceCache;
-        let coords = [];
-
-        this.currentLayer = this.isOpaquePass ? layerIds.length - 1 : 0;
-
-        if (this.isOpaquePass) {
-            if (!this._showOverdrawInspector) {
-                this.gl.disable(this.gl.BLEND);
-            }
-        } else {
-            this.gl.enable(this.gl.BLEND);
-        }
-
-        for (let i = 0; i < layerIds.length; i++) {
-            const layer = this.style._layers[layerIds[this.currentLayer]];
-
-            if (layer.source !== (sourceCache && sourceCache.id)) {
-                sourceCache = this.style.sourceCaches[layer.source];
-                coords = [];
-
-                if (sourceCache) {
-                    if (sourceCache.prepare) sourceCache.prepare();
-                    this.clearStencil();
-                    coords = sourceCache.getVisibleCoordinates();
-                    if (sourceCache.getSource().isTileClipped) {
-                        this._renderTileClippingMasks(coords);
-                    }
-                }
-
-                if (!this.isOpaquePass) {
-                    coords.reverse();
-                }
-            }
-
-            if (!this.isOpaquePass && layer.type === 'fill-extrusion') {
-                const renderTarget = this._prerenderedTextures[layer.id];
-                if (renderTarget) {
-                    this.id = layer.id;
-                    draw['fill-extrusion-texture'](this, layer, renderTarget.texture);
-                    this.viewportTextures.push(renderTarget);
-                    delete this._prerenderedTextures[layer.id];
-                }
-            } else {
-                this.renderLayer(this, (sourceCache: any), layer, coords);
-            }
-            this.currentLayer += this.isOpaquePass ? -1 : 1;
         }
     }
 

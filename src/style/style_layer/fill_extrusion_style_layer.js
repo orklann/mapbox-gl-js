@@ -19,6 +19,10 @@ class FillExtrusionStyleLayer extends StyleLayer {
     createBucket(parameters: BucketParameters) {
         return new FillExtrusionBucket(parameters);
     }
+
+    has3DPass() {
+        return true;
+    }
 }
 
 module.exports = FillExtrusionStyleLayer;

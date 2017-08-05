@@ -1,9 +1,13 @@
 // @flow
 
+const Buffer = require('../data/buffer');
+const VertexArrayObject = require('./vertex_array_object');
+const PosArray = require('../data/pos_array');
 const glMatrix = require('@mapbox/gl-matrix');
 const pattern = require('./pattern');
 const mat3 = glMatrix.mat3;
 const vec3 = glMatrix.vec3;
+const mat4 = glMatrix.mat4;
 
 import type Painter from './painter';
 import type SourceCache from '../source/source_cache';
@@ -13,18 +17,47 @@ import type TileCoord from '../source/tile_coord';
 module.exports = draw;
 
 function draw(painter: Painter, source: SourceCache, layer: FillExtrusionStyleLayer, coords: Array<TileCoord>) {
-    if (painter.isOpaquePass) return;
+    const gl = painter.gl;
+
+    if (painter.renderPass === '3d') {
+        gl.disable(gl.STENCIL_TEST);
+        gl.enable(gl.DEPTH_TEST);
+
+        painter.clearColor();
+        painter.depthMask(true);
+
+        for (let i = 0; i < coords.length; i++) {
+            drawExtrusion(painter, source, layer, coords[i]);
+        }
+    } else if (painter.renderPass === 'translucent') {
+        drawExtrusionTexture(painter, layer);
+    };
+}
+
+function drawExtrusionTexture(painter, layer) {
+    const renderedTexture = painter._prerenderedTextures[layer.id];
+    if (!renderedTexture) return;
 
     const gl = painter.gl;
+    const program = painter.useProgram('extrusionTexture');
+
     gl.disable(gl.STENCIL_TEST);
-    gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.DEPTH_TEST);
 
-    painter.clearColor();
-    painter.depthMask(true);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, renderedTexture.texture);
 
-    for (let i = 0; i < coords.length; i++) {
-        drawExtrusion(painter, source, layer, coords[i]);
-    }
+    gl.uniform1f(program.u_opacity, layer.paint['fill-extrusion-opacity']);
+    gl.uniform1i(program.u_image, 0);
+
+    const matrix = mat4.create();
+    mat4.ortho(matrix, 0, painter.width, painter.height, 0, 0, 1);
+    gl.uniformMatrix4fv(program.u_matrix, false, matrix);
+
+    gl.uniform2f(program.u_world, gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+    renderedTexture.vao.bind(gl, program, renderedTexture.buffer);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
 function drawExtrusion(painter, source, layer, coord) {
